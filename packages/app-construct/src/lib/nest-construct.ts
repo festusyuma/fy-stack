@@ -5,7 +5,6 @@ import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
-import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaEventSource from 'aws-cdk-lib/aws-lambda-event-sources';
 import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
@@ -55,16 +54,10 @@ export class NestConstruct extends Construct implements AppConstruct {
       });
     }
 
-    let role: iam.IRole | undefined;
-    if (props.role?.roleArn) {
-      role = iam.Role.fromRoleArn(this, 'AppRole', props.role?.roleArn);
-    }
-
     this.function = new lambda.Function(this, `AppFunction`, {
       runtime: lambda.Runtime.NODEJS_20_X,
       memorySize: 512,
       handler: props.webLayer ? 'run.sh' : 'main.handler',
-      role,
       layers,
       timeout: cdk.Duration.seconds(30),
       code: lambda.Code.fromAsset(serverOutput),

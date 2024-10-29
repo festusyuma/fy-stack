@@ -10,7 +10,6 @@ import {
 import * as cdk from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
-import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
@@ -77,16 +76,10 @@ export class NextAppRouterConstruct
 
     Object.assign(environment, props.env);
 
-    let role: iam.IRole | undefined;
-    if (props.role?.roleArn) {
-      role = iam.Role.fromRoleArn(this, 'AppRole', props.role?.roleArn);
-    }
-
     this.function = new lambda.Function(this, `AppFunction`, {
       runtime: lambda.Runtime.NODEJS_20_X,
       memorySize: 512,
       handler: 'run.sh',
-      role,
       timeout: cdk.Duration.seconds(60),
       code: lambda.Code.fromAsset(serverOutput),
       layers: [webAdapterLayer],

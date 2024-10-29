@@ -3,35 +3,13 @@
   "compileOnSave": false,
   "files": [],
   "references": [
-    {
-      "path": "./packages/auth-construct"
-    },
-    {
-      "path": "./packages/app-construct"
-    },
-    {
-      "path": "./packages/storage-construct"
-    },
-    {
-      "path": "./packages/storage-construct"
-    },
-    {
-      "path": "./packages/secret-construct"
-    },
-    {
-      "path": "./packages/database-construct"
-    },
-    {
-      "path": "./packages/event-construct"
-    },
-    {
-      "path": "./packages/cdn-construct"
-    },
-    {
-      "path": "./packages/role-construct"
-    },
-    {
-      "path": "./packages/types"
-    }
+    { "path": "./packages/auth-construct" },
+    { "path": "./packages/app-construct" },
+    { "path": "./packages/storage-construct" },
+    { "path": "./packages/secret-construct" },
+    { "path": "./packages/database-construct" },
+    { "path": "./packages/event-construct" },
+    { "path": "./packages/cdn-construct" },
+    { "path": "./packages/types" }
   ]
 }

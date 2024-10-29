@@ -17,13 +17,13 @@ export class CDNConstruct extends Construct {
       Object.fromEntries(
         Object.entries(props.routes).map(([key, val]) => {
           if ('$app' in val) {
-            const app = props.apps[val.$app];
+            const app = props.apps?.[val.$app];
             if (!app) throw new Error(`"${val.$app}" app not found`);
 
             app.function.addEnvironment('BASE_PATH', key);
             return [key, app];
           } else {
-            const resource = props.resources[val.$resource];
+            const resource = props.resources?.[val.$resource];
             if (!resource) throw new Error(`${val.$resource} resource not found`);
 
             return [key, resource];
