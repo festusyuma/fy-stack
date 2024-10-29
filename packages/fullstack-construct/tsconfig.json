@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "files": [],
+  "include": [],
+  "references": [
+    { "path": "../app-construct" },
+    { "path": "../cdn-construct" },
+    { "path": "../secret-construct" },
+    { "path": "../event-construct" },
+    { "path": "../database-construct" },
+    { "path": "../storage-construct" },
+    { "path": "../types" },
+    { "path": "../auth-construct" },
+    { "path": "./tsconfig.lib.json" }
+  ]
+}

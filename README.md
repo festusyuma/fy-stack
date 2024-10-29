@@ -89,4 +89,4 @@ And join the Nx community:
 - [Our Youtube channel](https://www.youtube.com/@nxdevtools)
 - [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
-nx g @nx/js:lib packages/connection-construct --publishable=true --importPath=@fy-stack/connection-construct
+nx g @nx/js:lib packages/fullstack-construct --publishable=true --importPath=@fy-stack/fullstack-construct
