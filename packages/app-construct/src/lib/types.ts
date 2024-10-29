@@ -1,4 +1,4 @@
-import type { BehaviorOptions } from 'aws-cdk-lib/aws-cloudfront';
+import { Attach, CDNResource, Event, Grant } from '@fy-stack/types';
 import type { IRole } from 'aws-cdk-lib/aws-iam';
 import type { Function } from 'aws-cdk-lib/aws-lambda';
 import { Queue } from 'aws-cdk-lib/aws-sqs';
@@ -11,8 +11,7 @@ export type AppProperties = {
   output: string;
 };
 
-export interface AppConstruct {
+export interface AppConstruct extends Attach, Grant, CDNResource, Event {
   function: Function;
   queue?: Queue
-  cloudfront(path: string): Record<string, BehaviorOptions>
 }

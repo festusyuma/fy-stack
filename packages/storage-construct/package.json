@@ -7,7 +7,8 @@
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.164.1",
-    "constructs": "10.4.2"
+    "constructs": "10.4.2",
+    "@fy-stack/types": "0.0.1"
   },
   "type": "commonjs",
   "main": "./dist/index.js",

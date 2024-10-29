@@ -1,4 +1,4 @@
-import type { AppConstruct } from '@fy-stack/app-construct';
+import type { Event } from '@fy-stack/types';
 import type { CronOptions } from 'aws-cdk-lib/aws-events';
 
 export type AppRef = { $app: string };
@@ -14,7 +14,7 @@ export type AppCron = {
 };
 
 export interface EventConstructProps {
-  apps: Record<string, AppConstruct>;
+  resources?: Record<string, Event>;
   events?: {
     messages?: AppMessage[];
     cron?: AppCron[];

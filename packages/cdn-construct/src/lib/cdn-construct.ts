@@ -1,7 +1,8 @@
+import type { CDNResource } from '@fy-stack/types';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import { Construct } from 'constructs';
 
-import { CDNConstructProps, CDNResource } from './types';
+import { CDNConstructProps } from './types';
 
 export class CDNConstruct extends Construct {
   public distribution: cloudfront.Distribution;

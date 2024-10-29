@@ -1,6 +1,12 @@
 import * as fs from 'node:fs';
 
-import { Attach, Attachable, Grant, Grantable } from '@fy-stack/types';
+import {
+  Attach,
+  Attachable,
+  CDNResource,
+  Grant,
+  Grantable,
+} from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
@@ -8,6 +14,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
+import { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
@@ -17,7 +24,7 @@ import { lambdaGrant } from './utils/lambda-grant';
 
 export class NextAppRouterConstruct
   extends Construct
-  implements AppConstruct, Attach, Grant
+  implements AppConstruct, Attach, Grant, CDNResource
 {
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
@@ -131,8 +138,12 @@ export class NextAppRouterConstruct
     return lambdaAttach(this.function, attachable);
   }
 
-  grant(... grants: Grantable[]) {
-    return lambdaGrant(this.function, grants)
+  grant(...grants: Grantable[]) {
+    return lambdaGrant(this.function, grants);
+  }
+
+  subscription(): ITopicSubscription {
+    throw new Error(`subscription not supported for ${this}`)
   }
 
   static clean(output: string, name: string, command: string) {

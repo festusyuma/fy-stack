@@ -1,7 +1,5 @@
-import type { BehaviorOptions } from 'aws-cdk-lib/aws-cloudfront';
+import type { CDNResource } from '@fy-stack/types';
 import type { Function } from 'aws-cdk-lib/aws-lambda';
-
-export type CDNResource = { cloudfront(path: string): Record<string, BehaviorOptions> }
 
 export interface CDNConstructProps {
   routes: Record<string, { $app: string } | { $resource: string }>;

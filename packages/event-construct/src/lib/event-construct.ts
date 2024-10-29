@@ -1,13 +1,14 @@
-import { Attachable } from '@fy-stack/types';
+import { Attachable, Grantable } from '@fy-stack/types';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as eventsTarget from 'aws-cdk-lib/aws-events-targets';
+import { IGrantable } from 'aws-cdk-lib/aws-iam';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import { Construct } from 'constructs';
 
 import { EventConstructProps } from './types';
 
-export class EventConstruct extends Construct implements Attachable {
+export class EventConstruct extends Construct implements Attachable, Grantable {
   public readonly topic: sns.Topic;
 
   constructor(scope: Construct, id: string, props: EventConstructProps) {
@@ -19,7 +20,7 @@ export class EventConstruct extends Construct implements Attachable {
       const appMessage = props.events?.messages?.[i];
       if (!appMessage) continue;
 
-      const app = props.apps[appMessage.$app];
+      const app = props.resources?.[appMessage.$app];
       if (!app) throw new Error(`${appMessage.$app} not found`);
 
       const filterPolicy: snsSubscriptions.SubscriptionProps = {
@@ -32,19 +33,7 @@ export class EventConstruct extends Construct implements Attachable {
         },
       };
 
-      if (appMessage.publish) {
-        this.topic.grantPublish(app.function);
-      }
-
-      if (app.queue) {
-        this.topic.addSubscription(
-          new snsSubscriptions.SqsSubscription(app?.queue, filterPolicy)
-        );
-      } else {
-        this.topic.addSubscription(
-          new snsSubscriptions.LambdaSubscription(app.function, filterPolicy)
-        );
-      }
+      this.topic.addSubscription(app.subscription(filterPolicy))
     }
 
     for (const i in props.events?.cron ?? []) {
@@ -69,6 +58,10 @@ export class EventConstruct extends Construct implements Attachable {
   attachable() {
     return {
       topic: this.topic.topicArn,
-    }
+    };
+  }
+
+  grantable(grant: IGrantable) {
+    this.topic.grantPublish(grant);
   }
 }

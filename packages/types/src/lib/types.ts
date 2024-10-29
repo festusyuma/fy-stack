@@ -1,17 +1,28 @@
-import * as iam from 'aws-cdk-lib/aws-iam'
+import type { BehaviorOptions } from 'aws-cdk-lib/aws-cloudfront';
+import type { IGrantable } from 'aws-cdk-lib/aws-iam';
+import type { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
+import type { SubscriptionProps } from 'aws-cdk-lib/aws-sns-subscriptions';
 
 export interface Attachable {
-  attachable(): Record<string, string>
+  attachable(): Record<string, string>;
 }
 
 export interface Attach {
-  attach(attachable: Record<string, Attachable>): void
+  attach(attachable: Record<string, Attachable>): void;
 }
 
 export interface Grantable {
-  grantable(grant: iam.IGrantable): void
+  grantable(grant: IGrantable): void;
 }
 
 export interface Grant {
-  grant(...grantables: Grantable[]): void
+  grant(...grantables: Grantable[]): void;
+}
+
+export interface CDNResource {
+  cloudfront(path: string): Record<string, BehaviorOptions>;
+}
+
+export interface Event {
+  subscription(props: SubscriptionProps): ITopicSubscription;
 }

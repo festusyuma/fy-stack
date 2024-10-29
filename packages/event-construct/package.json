@@ -7,7 +7,6 @@
   "peerDependencies": {
     "aws-cdk-lib": "2.164.1",
     "constructs": "10.4.2",
-    "@fy-stack/app-construct": "0.0.1",
     "@fy-stack/types": "0.0.1"
   },
   "type": "commonjs",

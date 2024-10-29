@@ -1,13 +1,15 @@
 import * as child_process from 'node:child_process';
 import * as fs from 'node:fs';
 
-import type { Attach, Attachable, Grant, Grantable } from '@fy-stack/types';
+import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaEventSource from 'aws-cdk-lib/aws-lambda-event-sources';
+import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
+import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
@@ -19,7 +21,7 @@ interface Props extends AppProperties {
   webLayer?: boolean;
 }
 
-export class NestConstruct extends Construct implements AppConstruct, Attach, Grant {
+export class NestConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
 
@@ -83,11 +85,18 @@ export class NestConstruct extends Construct implements AppConstruct, Attach, Gr
   }
 
   attach(attachable: Record<string, Attachable>) {
-    return lambdaAttach(this.function, attachable)
+    return lambdaAttach(this.function, attachable);
   }
 
   grant(...grants: Grantable[]) {
-    return lambdaGrant(this.function, grants)
+    return lambdaGrant(this.function, grants);
+  }
+
+  subscription(props: SubscriptionProps): ITopicSubscription {
+    if (this.queue)
+      return new snsSubscriptions.SqsSubscription(this.queue, props);
+
+    return new snsSubscriptions.LambdaSubscription(this.function, props);
   }
 
   cloudfront(path: string) {
