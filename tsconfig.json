@@ -2,5 +2,33 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./packages/auth-construct"
+    },
+    {
+      "path": "./packages/app-construct"
+    },
+    {
+      "path": "./packages/storage-construct"
+    },
+    {
+      "path": "./packages/storage-construct"
+    },
+    {
+      "path": "./packages/secret-construct"
+    },
+    {
+      "path": "./packages/database-construct"
+    },
+    {
+      "path": "./packages/event-construct"
+    },
+    {
+      "path": "./packages/cdn-construct"
+    },
+    {
+      "path": "./packages/role-construct"
+    }
+  ]
 }

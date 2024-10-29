@@ -1,0 +1,22 @@
+{
+  "name": "@fy-stack/event-construct",
+  "version": "0.0.1",
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "peerDependencies": {
+    "aws-cdk-lib": "2.164.1",
+    "constructs": "10.4.2",
+    "@fy-stack/app-construct": "0.0.1"
+  },
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "nx": {
+    "name": "event-construct"
+  }
+}
