@@ -1,19 +1,20 @@
 {
   "name": "@fy-stack/fullstack-construct",
-  "version": "0.0.1",
+  "version": "0.0.12",
   "dependencies": {
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "@fy-stack/app-construct": "0.0.12",
+    "@fy-stack/auth-construct": "0.0.12",
+    "@fy-stack/storage-construct": "0.0.12",
+    "@fy-stack/database-construct": "0.0.12",
+    "@fy-stack/event-construct": "0.0.12",
+    "@fy-stack/secret-construct": "0.0.12",
+    "@fy-stack/cdn-construct": "0.0.12",
+    "@fy-stack/types": "0.0.12"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.164.1",
-    "constructs": "10.4.2",
-    "@fy-stack/auth-construct": "0.0.1",
-    "@fy-stack/storage-construct": "0.0.1",
-    "@fy-stack/database-construct": "0.0.1",
-    "@fy-stack/event-construct": "0.0.1",
-    "@fy-stack/secret-construct": "0.0.1",
-    "@fy-stack/cdn-construct": "0.0.1",
-    "@fy-stack/types": "0.0.1"
+    "constructs": "10.4.2"
   },
   "type": "commonjs",
   "main": "./dist/index.js",

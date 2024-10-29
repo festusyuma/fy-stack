@@ -1,13 +1,13 @@
 {
   "name": "@fy-stack/auth-construct",
-  "version": "0.0.1",
+  "version": "0.0.12",
   "dependencies": {
+    "@fy-stack/types": "0.0.12",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.164.1",
-    "constructs": "10.4.2",
-    "@fy-stack/types": "0.0.1"
+    "constructs": "10.4.2"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
