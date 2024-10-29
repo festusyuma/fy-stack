@@ -45,4 +45,14 @@ export class AuthConstruct extends Construct {
       }
     }
   }
+
+  secrets() {
+    return {
+      arn: this?.userPool.userPoolArn,
+      id: this?.userPool.userPoolId,
+      domainName: this.domain.domainName,
+      clientId: this?.client.userPoolClientId,
+      clientSecret: this?.client.userPoolClientSecret.unsafeUnwrap(),
+    }
+  }
 }

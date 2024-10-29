@@ -64,4 +64,10 @@ export class EventConstruct extends Construct {
       }
     }
   }
+
+  secrets() {
+    return {
+      topic: this.topic.topicArn,
+    }
+  }
 }

@@ -23,7 +23,7 @@ export class CDNConstruct extends Construct {
             return [key, app];
           } else {
             const resource = props.resources[val.$resource];
-            if (!resource) throw new Error('resource not found');
+            if (!resource) throw new Error(`${val.$resource} resource not found`);
 
             return [key, resource];
           }

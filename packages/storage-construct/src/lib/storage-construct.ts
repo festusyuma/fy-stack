@@ -1,9 +1,9 @@
 import * as cdk from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
+import { StorageCdnStack } from './storage-cdn-stack';
 import type { StorageConstructProps } from './types';
 
 export class StorageConstruct extends Construct {
@@ -26,26 +26,14 @@ export class StorageConstruct extends Construct {
     this.bucket = new s3.Bucket(this, 'Bucket', bucketProps);
   }
 
-  cloudfront(path: string, cdnConstruct: Construct) {
-    const bucket = s3.Bucket.fromBucketArn(
-      cdnConstruct,
-      'StorageBucket',
-      this.bucket.bucketArn
-    );
-
-    const storageAccessControl = new cloudfront.S3OriginAccessControl(
-      cdnConstruct,
-      'StorageOriginAccessControl'
-    );
-
-    const storageOrigin =
-      cloudfrontOrigin.S3BucketOrigin.withOriginAccessControl(bucket, {
-        originAccessControl: storageAccessControl,
-      });
+  cloudfront(path: string) {
+    const storageOriginStack = new StorageCdnStack(this, "StorageCDNStack", {
+      bucketArn: this.bucket.bucketArn
+    })
 
     const storageBehavior: cloudfront.BehaviorOptions = {
       compress: true,
-      origin: storageOrigin,
+      origin: storageOriginStack.storageOrigin,
       cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
       allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
       cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
@@ -53,5 +41,12 @@ export class StorageConstruct extends Construct {
     };
 
     return { [`${path}/*`]: storageBehavior };
+  }
+
+  secrets() {
+    return {
+      name: this.bucket.bucketName,
+      arn: this.bucket.bucketArn,
+    }
   }
 }

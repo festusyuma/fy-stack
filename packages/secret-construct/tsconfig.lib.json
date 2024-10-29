@@ -9,11 +9,5 @@
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "references": [
-    { "path": "../storage-construct/tsconfig.lib.json" },
-    { "path": "../auth-construct/tsconfig.lib.json" },
-    { "path": "../app-construct/tsconfig.lib.json" },
-    { "path": "../event-construct/tsconfig.lib.json" },
-    { "path": "../database-construct/tsconfig.lib.json" }
-  ]
+  "references": [{ "path": "../app-construct/tsconfig.lib.json" }]
 }

@@ -4,7 +4,7 @@ import { Construct } from 'constructs';
 
 
 export class DatabaseConstruct extends Construct {
-  public secrets: secretsManager.ISecret;
+  public dbSecrets: secretsManager.ISecret;
   public db: rds.IDatabaseCluster;
   public dbName: string;
 
@@ -27,6 +27,14 @@ export class DatabaseConstruct extends Construct {
     dbSecret.attach(db);
 
     this.db = db;
-    this.secrets = dbSecret;
+    this.dbSecrets = dbSecret;
+  }
+
+  secrets() {
+    return {
+      arn: this.db.clusterArn,
+      name: this.dbName,
+      secrets: this.dbSecrets.secretArn
+    }
   }
 }
