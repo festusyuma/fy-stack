@@ -2,15 +2,11 @@
   "name": "@fy-stack/secret-construct",
   "version": "0.0.1",
   "dependencies": {
-    "tslib": "^2.3.0"
+    "tslib": "2.3.0"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.164.1",
     "constructs": "10.4.2",
-    "@fy-stack/database-construct": "0.0.1",
-    "@fy-stack/auth-construct": "0.0.1",
-    "@fy-stack/storage-construct": "0.0.1",
-    "@fy-stack/event-construct": "0.0.1",
     "@fy-stack/app-construct": "0.0.1"
   },
   "type": "commonjs",
