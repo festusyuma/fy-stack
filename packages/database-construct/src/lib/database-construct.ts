@@ -1,9 +1,14 @@
+import { Attachable, Grantable } from '@fy-stack/types';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import { IGrantable } from 'aws-cdk-lib/aws-iam';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsManager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
-
-export class DatabaseConstruct extends Construct {
+export class DatabaseConstruct
+  extends Construct
+  implements Attachable, Grantable
+{
   public dbSecrets: secretsManager.ISecret;
   public db: rds.IDatabaseCluster;
   public dbName: string;
@@ -17,7 +22,7 @@ export class DatabaseConstruct extends Construct {
       { clusterIdentifier: 'dev-db-instance' }
     );
 
-    this.dbName = `${this.node.id}-db`
+    this.dbName = `${this.node.id}-db`;
 
     const dbSecret = new rds.DatabaseSecret(this, 'DatabaseSecret', {
       username: this.node.id,
@@ -30,11 +35,30 @@ export class DatabaseConstruct extends Construct {
     this.dbSecrets = dbSecret;
   }
 
-  secrets() {
+  grantable(grant: IGrantable) {
+    const principals = [grant.grantPrincipal];
+
+    new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['rds-data:*'],
+      resources: [this.db.clusterArn],
+      principals,
+    });
+
+    new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['secretsmanager:GetSecretValue'],
+      resources: [this.dbSecrets.secretArn],
+      principals,
+    });
+  }
+
+  attachable() {
     return {
       arn: this.db.clusterArn,
       name: this.dbName,
-      secrets: this.dbSecrets.secretArn
-    }
+      secretsArn: this.dbSecrets.secretArn,
+      secretsName: this.dbSecrets.secretName,
+    };
   }
 }

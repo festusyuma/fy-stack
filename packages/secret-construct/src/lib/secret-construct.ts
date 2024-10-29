@@ -1,10 +1,12 @@
+import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
+import { IGrantable } from 'aws-cdk-lib/aws-iam';
 import * as secretsManager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 import type { SecretConstructProps } from './type';
 
-export class SecretsConstruct extends cdk.NestedStack {
+export class SecretsConstruct extends Construct implements Attachable, Grantable {
   public readonly secrets: secretsManager.Secret;
 
   constructor(scope: Construct, id: string, props: SecretConstructProps) {
@@ -15,20 +17,18 @@ export class SecretsConstruct extends cdk.NestedStack {
 
     Object.assign(
       secretObjectValue,
-      ...Object.entries(props.resources ?? {})
-        .map(([key, val]) => {
-          return Object.fromEntries(
-            Object.entries(val?.secrets() ?? {})
-              .map(([subKey, subVal]) => [`${key}.${subKey}`, subVal])
-          )
-        })
-    )
+      ...Object.entries(props.resources ?? {}).map(([key, val]) => {
+        return Object.fromEntries(
+          Object.entries(val?.attachable() ?? {}).map(([subKey, subVal]) => [
+            `${key}.${subKey}`,
+            subVal,
+          ])
+        );
+      })
+    );
 
     if (props.secrets) {
-      Object.assign(
-        secretObjectValue,
-        props.secrets,
-      );
+      Object.assign(secretObjectValue, props.secrets);
     }
 
     this.secrets = new secretsManager.Secret(this, 'AppSecrets', {
@@ -39,13 +39,16 @@ export class SecretsConstruct extends cdk.NestedStack {
         ])
       ),
     });
+  }
 
-    for (const i in props.apps) {
-      const app = props.apps[i];
-      if (!app) continue;
+  attachable() {
+    return {
+      arn: this.secrets.secretArn,
+      name: this.secrets.secretName,
+    };
+  }
 
-      app.function.addEnvironment('APP_SECRETS', this.secrets.secretName);
-      this.secrets.grantRead(app.function);
-    }
+  grantable(grant: IGrantable) {
+    this.secrets.grantRead(grant);
   }
 }

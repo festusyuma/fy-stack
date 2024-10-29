@@ -1,3 +1,4 @@
+import { Attachable } from '@fy-stack/types';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as eventsTarget from 'aws-cdk-lib/aws-events-targets';
 import * as sns from 'aws-cdk-lib/aws-sns';
@@ -6,7 +7,7 @@ import { Construct } from 'constructs';
 
 import { EventConstructProps } from './types';
 
-export class EventConstruct extends Construct {
+export class EventConstruct extends Construct implements Attachable {
   public readonly topic: sns.Topic;
 
   constructor(scope: Construct, id: string, props: EventConstructProps) {
@@ -65,7 +66,7 @@ export class EventConstruct extends Construct {
     }
   }
 
-  secrets() {
+  attachable() {
     return {
       topic: this.topic.topicArn,
     }

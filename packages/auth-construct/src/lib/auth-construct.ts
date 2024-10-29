@@ -1,10 +1,12 @@
+import { Attachable, Grantable } from '@fy-stack/types';
 import { Duration } from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
 import { AuthConstructProps } from './types';
 
-export class AuthConstruct extends Construct {
+export class AuthConstruct extends Construct implements Attachable, Grantable {
   public userPool: cognito.UserPool;
   public domain: cognito.UserPoolDomain;
   public client: cognito.UserPoolClient;
@@ -30,8 +32,12 @@ export class AuthConstruct extends Construct {
         userSrp: true,
         adminUserPassword: true,
       },
-      accessTokenValidity: Duration.hours(props.token?.accessTokenValidity ?? 24),
-      refreshTokenValidity: Duration.hours(props.token?.refreshTokenValidity ?? 720),
+      accessTokenValidity: Duration.hours(
+        props.token?.accessTokenValidity ?? 24
+      ),
+      refreshTokenValidity: Duration.hours(
+        props.token?.refreshTokenValidity ?? 720
+      ),
       generateSecret: true,
     });
 
@@ -46,13 +52,22 @@ export class AuthConstruct extends Construct {
     }
   }
 
-  secrets() {
+  attachable() {
     return {
       arn: this?.userPool.userPoolArn,
       id: this?.userPool.userPoolId,
       domainName: this.domain.domainName,
       clientId: this?.client.userPoolClientId,
       clientSecret: this?.client.userPoolClientSecret.unsafeUnwrap(),
-    }
+    };
+  }
+
+  grantable(grant: iam.IGrantable) {
+    new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['cognito-idp:*', 'cognito-identity:*'],
+      resources: [this.userPool.userPoolArn],
+      principals: [grant.grantPrincipal],
+    });
   }
 }

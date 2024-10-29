@@ -2,8 +2,5 @@
   "extends": "../../tsconfig.base.json",
   "files": [],
   "include": [],
-  "references": [
-    { "path": "../app-construct" },
-    { "path": "./tsconfig.lib.json" }
-  ]
+  "references": [{ "path": "../types" }, { "path": "./tsconfig.lib.json" }]
 }

@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 
+import { Attach, Attachable, Grant, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
@@ -11,8 +12,13 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
 import { AppConstruct, AppProperties } from './types';
+import { lambdaAttach } from './utils/lambda-attach';
+import { lambdaGrant } from './utils/lambda-grant';
 
-export class NextAppRouterConstruct extends Construct implements AppConstruct {
+export class NextAppRouterConstruct
+  extends Construct
+  implements AppConstruct, Attach, Grant
+{
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
 
@@ -119,6 +125,14 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       [`${path}/_next/*`]: staticBehavior,
       [`${path}/*.ico`]: staticBehavior,
     };
+  }
+
+  attach(attachable: Record<string, Attachable>) {
+    return lambdaAttach(this.function, attachable);
+  }
+
+  grant(... grants: Grantable[]) {
+    return lambdaGrant(this.function, grants)
   }
 
   static clean(output: string, name: string, command: string) {

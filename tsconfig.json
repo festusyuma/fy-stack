@@ -29,6 +29,9 @@
     },
     {
       "path": "./packages/role-construct"
+    },
+    {
+      "path": "./packages/types"
     }
   ]
 }

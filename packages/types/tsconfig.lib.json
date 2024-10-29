@@ -9,8 +9,5 @@
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "references": [
-    { "path": "../types/tsconfig.lib.json" },
-    { "path": "../app-construct/tsconfig.lib.json" }
-  ]
+  "references": []
 }

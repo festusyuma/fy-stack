@@ -89,4 +89,4 @@ And join the Nx community:
 - [Our Youtube channel](https://www.youtube.com/@nxdevtools)
 - [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
-nx g @nx/js:lib packages/role-construct --publishable=true --importPath=@fy-stack/role-construct
+nx g @nx/js:lib packages/types --importPath=@fy-stack/types
