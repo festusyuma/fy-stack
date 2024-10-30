@@ -36,21 +36,21 @@ export class DatabaseConstruct
   }
 
   grantable(grant: IGrantable) {
-    const principals = [grant.grantPrincipal];
+    grant.grantPrincipal.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['rds-data:*'],
+        resources: [this.db.clusterArn],
+      })
+    );
 
-    new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: ['rds-data:*'],
-      resources: [this.db.clusterArn],
-      principals,
-    });
-
-    new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: ['secretsmanager:GetSecretValue'],
-      resources: [this.dbSecrets.secretArn],
-      principals,
-    });
+    grant.grantPrincipal.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [this.dbSecrets.secretArn],
+      })
+    );
   }
 
   attachable() {

@@ -63,11 +63,10 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
   }
 
   grantable(grant: iam.IGrantable) {
-    new iam.PolicyStatement({
+    grant.grantPrincipal.addToPrincipalPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: ['cognito-idp:*', 'cognito-identity:*'],
       resources: [this.userPool.userPoolArn],
-      principals: [grant.grantPrincipal],
-    });
+    }))
   }
 }

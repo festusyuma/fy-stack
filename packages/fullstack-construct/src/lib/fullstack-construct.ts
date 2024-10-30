@@ -28,6 +28,7 @@ export class FullStackConstruct extends Construct {
   public event?: EventConstruct;
   public apps?: Record<string, AppConstruct>;
   public cdn?: CDNConstruct;
+  public secret: SecretsConstruct;
 
   constructor(scope: Construct, id: string, props: FullStackConstructProps) {
     super(scope, id);
@@ -85,7 +86,7 @@ export class FullStackConstruct extends Construct {
       });
     }
 
-    const secret = new SecretsConstruct(this, 'SecretsStack', {
+    this.secret = new SecretsConstruct(this, 'SecretsStack', {
       resources: {
         auth: this.auth,
         database: this.database,
@@ -112,6 +113,8 @@ export class FullStackConstruct extends Construct {
       storage: this.storage,
       database: this.database,
       auth: this.auth,
+      secrets: this.secret,
+      event: this.event
     };
 
     type ResourceKey = keyof typeof resources;
@@ -134,7 +137,7 @@ export class FullStackConstruct extends Construct {
 
     new cdk.CfnOutput(this, 'App Secrets', {
       key: 'appSecrets',
-      value: secret.secrets.secretName,
+      value: this.secret.secrets.secretName,
     });
   }
 }

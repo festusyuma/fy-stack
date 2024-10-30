@@ -56,11 +56,12 @@ export class StorageConstruct
   }
 
   grantable(grant: iam.IGrantable) {
-    new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: ['s3:*'],
-      resources: [`${this.bucket.bucketArn}/*`],
-      principals: [grant.grantPrincipal],
-    });
+    grant.grantPrincipal.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['s3:*'],
+        resources: [`${this.bucket.bucketArn}/*`],
+      })
+    );
   }
 }

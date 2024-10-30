@@ -1,9 +1,9 @@
 {
   "name": "@fy-stack/app-construct",
-  "version": "0.0.12",
+  "version": "0.0.121",
   "dependencies": {
     "tslib": "^2.3.0",
-    "@fy-stack/types": "0.0.12"
+    "@fy-stack/types": "0.0.121"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.164.1",
