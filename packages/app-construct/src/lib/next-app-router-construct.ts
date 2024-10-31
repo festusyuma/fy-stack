@@ -1,13 +1,8 @@
 import * as fs from 'node:fs';
 
-import {
-  Attach,
-  Attachable,
-  CDNResource,
-  Grant,
-  Grantable,
-} from '@fy-stack/types';
+import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
+import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
@@ -21,10 +16,7 @@ import { AppConstruct, AppProperties } from './types';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
 
-export class NextAppRouterConstruct
-  extends Construct
-  implements AppConstruct, Attach, Grant, CDNResource
-{
+export class NextAppRouterConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
 
@@ -127,6 +119,10 @@ export class NextAppRouterConstruct
     };
   }
 
+  api(path: string): Record<string, HttpRouteIntegration> {
+    throw new Error('api not supported for this construct');
+  }
+
   attach(attachable: Record<string, Attachable>) {
     return lambdaAttach(this.function, attachable);
   }
@@ -136,7 +132,7 @@ export class NextAppRouterConstruct
   }
 
   subscription(): ITopicSubscription {
-    throw new Error(`subscription not supported for ${this}`)
+    throw new Error(`subscription not supported for ${this}`);
   }
 
   static clean(output: string, name: string, command: string) {
