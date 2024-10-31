@@ -1,9 +1,9 @@
 {
   "name": "@fy-stack/secret-construct",
-  "version": "0.0.121",
+  "version": "0.0.122",
   "dependencies": {
     "tslib": "^2.3.0",
-    "@fy-stack/types": "0.0.121"
+    "@fy-stack/types": "0.0.122"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.164.1",

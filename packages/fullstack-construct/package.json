@@ -1,17 +1,17 @@
 {
   "name": "@fy-stack/fullstack-construct",
-  "version": "0.0.121",
+  "version": "0.0.122",
   "dependencies": {
     "tslib": "^2.3.0",
-    "@fy-stack/auth-construct": "0.0.121",
-    "@fy-stack/storage-construct": "0.0.121",
-    "@fy-stack/database-construct": "0.0.121",
-    "@fy-stack/event-construct": "0.0.121",
-    "@fy-stack/secret-construct": "0.0.121",
-    "@fy-stack/cdn-construct": "0.0.121",
-    "@fy-stack/apigateway-construct": "0.0.121",
-    "@fy-stack/types": "0.0.121",
-    "@fy-stack/app-construct": "0.0.121"
+    "@fy-stack/auth-construct": "0.0.122",
+    "@fy-stack/storage-construct": "0.0.122",
+    "@fy-stack/database-construct": "0.0.122",
+    "@fy-stack/event-construct": "0.0.122",
+    "@fy-stack/secret-construct": "0.0.122",
+    "@fy-stack/cdn-construct": "0.0.122",
+    "@fy-stack/apigateway-construct": "0.0.122",
+    "@fy-stack/types": "0.0.122",
+    "@fy-stack/app-construct": "0.0.122"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.164.1",
