@@ -15,11 +15,13 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 import { AppType, FullStackConstructProps } from './types';
+import { DenoApiConstruct } from '@fy-stack/app-construct/dist/lib/deno-api-construct';
 
 const AppBuilds = {
   [AppType.NEXT_APP_ROUTER]: NextAppRouterConstruct,
   [AppType.NEST]: NestConstruct,
   [AppType.NEST_API]: NestApiConstruct,
+  [AppType.DENO_API]: DenoApiConstruct,
 };
 
 export class FullStackConstruct extends Construct {
@@ -62,16 +64,19 @@ export class FullStackConstruct extends Construct {
         apps,
         Object.fromEntries(
           Object.entries(props.apps).map(([key, app]) => {
+            const AppTypeConstruct = AppBuilds[app.type];
+
             return [
               key,
-              new AppBuilds[app.type](this, `${key}App`, {
+              new AppTypeConstruct(this, `${key}App`, {
                 queue: app.attachment?.queue,
-                output: app.output,
-                buildPaths: AppBuilds[app.type].clean(
-                  app.output,
-                  key,
-                  app.command
-                ),
+                output: app.path,
+                buildPaths: {
+                  ...('clean' in AppTypeConstruct
+                    ? AppTypeConstruct.clean(app.path, key, app.command)
+                    : {}),
+                  ...app.buildPaths,
+                },
               }),
             ];
           })
@@ -127,7 +132,7 @@ export class FullStackConstruct extends Construct {
       database: this.database,
       auth: this.auth,
       secrets: this.secret,
-      event: this.event
+      event: this.event,
     };
 
     type ResourceKey = keyof typeof resources;
@@ -143,9 +148,9 @@ export class FullStackConstruct extends Construct {
 
       this.apps?.[i]?.grant(
         ...(props.apps[i]?.grant
-          ?.map(val => resources[val as ResourceKey])
+          ?.map((val) => resources[val as ResourceKey])
           .filter((v) => !!v) ?? [])
-      )
+      );
     }
 
     new cdk.CfnOutput(this, 'App Secrets', {

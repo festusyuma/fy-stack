@@ -4,6 +4,7 @@ import * as events from 'aws-cdk-lib/aws-events';
 export enum AppType {
   NEST = 'nest',
   NEST_API = 'nestApi',
+  DENO_API = 'denoApi',
   NEXT_APP_ROUTER = 'nextAppRouter',
 }
 
@@ -25,10 +26,11 @@ export enum AppGrant {
 
 export type App = {
   type: AppType;
-  output: string;
+  path: string;
   attachment?: AppAttachment;
   grant?: AppGrant[];
   command: string;
+  buildPaths?: Record<string, string>
 };
 
 export type AppRef = { $app: string };

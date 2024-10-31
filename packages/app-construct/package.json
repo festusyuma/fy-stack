@@ -1,6 +1,6 @@
 {
   "name": "@fy-stack/app-construct",
-  "version": "0.0.122",
+  "version": "0.0.123",
   "dependencies": {
     "tslib": "^2.3.0",
     "@fy-stack/types": "0.0.122"
