@@ -16,7 +16,7 @@ export class ApiGatewayConstruct extends Construct {
       routes,
       Object.fromEntries(
         Object.entries(props.routes).map(([key, val]) => {
-          const app = props.apps?.[val.$resource];
+          const app = props.resources?.[val.$resource];
           if (!app) throw new Error(`"${val.$resource}" resource not found`);
 
           return [key, app];

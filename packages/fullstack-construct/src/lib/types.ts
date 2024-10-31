@@ -1,3 +1,4 @@
+import { ResourceRef } from '@fy-stack/types';
 import * as events from 'aws-cdk-lib/aws-events';
 
 export enum AppType {
@@ -30,13 +31,7 @@ export type App = {
   command: string;
 };
 
-export enum AppResourceType {
-  UPLOADS = 'uploads',
-  AUTH = 'auth',
-}
-
 export type AppRef = { $app: string };
-export type ResourceRef = { $resource: AppResourceType };
 
 export type AppMessage = AppRef & {
   messages: string[];
@@ -58,6 +53,7 @@ export type FullStackConstructProps = {
     messages?: AppMessage[];
     cron?: AppCron[];
   };
-  cdn?: { routes: Record<string, AppRef | ResourceRef> };
+  cdn?: { routes: Record<string, ResourceRef> };
+  api?: { routes: Record<string, ResourceRef> };
   secrets?: Record<string, string | undefined>;
 };

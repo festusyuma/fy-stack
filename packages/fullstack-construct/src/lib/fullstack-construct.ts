@@ -1,19 +1,20 @@
+import {
+  type AppConstruct,
+  NestApiConstruct,
+  NestConstruct,
+  NextAppRouterConstruct,
+} from '@fy-stack/app-construct';
+import { AuthConstruct } from '@fy-stack/auth-construct';
+import { CDNConstruct } from '@fy-stack/cdn-construct';
+import { DatabaseConstruct } from '@fy-stack/database-construct';
+import { EventConstruct } from '@fy-stack/event-construct';
+import { SecretsConstruct } from '@fy-stack/secret-construct';
+import { StorageConstruct } from '@fy-stack/storage-construct';
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 import { AppType, FullStackConstructProps } from './types';
-import { AuthConstruct } from '@fy-stack/auth-construct';
-import { StorageConstruct } from '@fy-stack/storage-construct';
-import { DatabaseConstruct } from '@fy-stack/database-construct';
-import { EventConstruct } from '@fy-stack/event-construct';
-import { SecretsConstruct } from '@fy-stack/secret-construct';
-import { CDNConstruct } from '@fy-stack/cdn-construct';
-import {
-  NestApiConstruct,
-  NestConstruct,
-  NextAppRouterConstruct,
-  type AppConstruct,
-} from '@fy-stack/app-construct';
+import { ApiGatewayConstruct } from '@fy-stack/apigateway-construct';
 
 const AppBuilds = {
   [AppType.NEXT_APP_ROUTER]: NextAppRouterConstruct,
@@ -28,6 +29,7 @@ export class FullStackConstruct extends Construct {
   public event?: EventConstruct;
   public apps?: Record<string, AppConstruct>;
   public cdn?: CDNConstruct;
+  public api?: ApiGatewayConstruct;
   public secret: SecretsConstruct;
 
   constructor(scope: Construct, id: string, props: FullStackConstructProps) {
@@ -99,13 +101,24 @@ export class FullStackConstruct extends Construct {
     if (props.cdn) {
       this.cdn = new CDNConstruct(this, 'CDNStack', {
         routes: props.cdn.routes,
-        apps: this.apps,
-        resources: { uploads: this.storage },
+        resources: { ...this.apps, uploads: this.storage },
       });
 
-      new cdk.CfnOutput(this, 'App Url', {
-        key: 'appUrl',
+      new cdk.CfnOutput(this, 'CDN Url', {
+        key: 'cdnUrl',
         value: 'https://' + this.cdn.distribution.domainName,
+      });
+    }
+
+    if (props.api) {
+      this.api = new ApiGatewayConstruct(this, 'CDNStack', {
+        routes: props.api.routes,
+        resources: this.apps,
+      });
+
+      new cdk.CfnOutput(this, 'Api Url', {
+        key: 'apiUrl',
+        value: this.api.api.apiEndpoint,
       });
     }
 

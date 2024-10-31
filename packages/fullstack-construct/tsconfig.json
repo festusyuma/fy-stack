@@ -4,6 +4,7 @@
   "include": [],
   "references": [
     { "path": "../app-construct" },
+    { "path": "../apigateway-construct" },
     { "path": "../cdn-construct" },
     { "path": "../secret-construct" },
     { "path": "../event-construct" },
