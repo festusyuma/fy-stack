@@ -11,7 +11,6 @@ import { DatabaseConstruct } from '@fy-stack/database-construct';
 import { EventConstruct } from '@fy-stack/event-construct';
 import { SecretsConstruct } from '@fy-stack/secret-construct';
 import { StorageConstruct } from '@fy-stack/storage-construct';
-import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 import { AppType, FullStackConstructProps } from './types';
@@ -38,23 +37,18 @@ export class FullStackConstruct extends Construct {
     super(scope, id);
 
     if (props.auth) {
-      this.auth = new AuthConstruct(this, props.appId + 'AuthStack', {
+      this.auth = new AuthConstruct(this, props.appId + 'AuthConstruct', {
         groups: props.auth.groups,
       });
     }
 
     if (props.storage) {
-      this.storage = new StorageConstruct(this, 'StorageStack', props.storage);
+      this.storage = new StorageConstruct(this, 'StorageConstruct', props.storage);
     }
 
     /* create secrets for test or production environments */
     if (props.database) {
-      this.database = new DatabaseConstruct(this, 'DatabaseStack');
-
-      new cdk.CfnOutput(this, 'Database Secrets', {
-        key: 'dbSecrets',
-        value: this.database.dbSecrets.secretName,
-      });
+      this.database = new DatabaseConstruct(this, 'DatabaseConstruct');
     }
 
     if (props.apps) {
@@ -87,13 +81,13 @@ export class FullStackConstruct extends Construct {
     }
 
     if (props.events) {
-      this.event = new EventConstruct(this, 'EventStack', {
+      this.event = new EventConstruct(this, 'EventConstruct', {
         resources: this.apps,
         events: props.events,
       });
     }
 
-    this.secret = new SecretsConstruct(this, 'SecretsStack', {
+    this.secret = new SecretsConstruct(this, 'SecretConstruct', {
       resources: {
         auth: this.auth,
         database: this.database,
@@ -104,26 +98,16 @@ export class FullStackConstruct extends Construct {
     });
 
     if (props.cdn) {
-      this.cdn = new CDNConstruct(this, 'CDNStack', {
+      this.cdn = new CDNConstruct(this, 'CDNConstruct', {
         routes: props.cdn.routes,
         resources: { ...this.apps, uploads: this.storage },
-      });
-
-      new cdk.CfnOutput(this, 'CDN Url', {
-        key: 'cdnUrl',
-        value: 'https://' + this.cdn.distribution.domainName,
       });
     }
 
     if (props.api) {
-      this.api = new ApiGatewayConstruct(this, 'CDNStack', {
+      this.api = new ApiGatewayConstruct(this, 'ApiConstruct', {
         routes: props.api.routes,
         resources: this.apps,
-      });
-
-      new cdk.CfnOutput(this, 'Api Url', {
-        key: 'apiUrl',
-        value: this.api.api.apiEndpoint,
       });
     }
 
@@ -152,10 +136,5 @@ export class FullStackConstruct extends Construct {
           .filter((v) => !!v) ?? [])
       );
     }
-
-    new cdk.CfnOutput(this, 'App Secrets', {
-      key: 'appSecrets',
-      value: this.secret.secrets.secretName,
-    });
   }
 }

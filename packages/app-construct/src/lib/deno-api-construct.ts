@@ -1,7 +1,6 @@
 import {  Attachable, Grantable } from '@fy-stack/types';
 import { Duration } from 'aws-cdk-lib';
 import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
-import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import {
   AllowedMethods,
   BehaviorOptions,
@@ -31,6 +30,7 @@ import { Construct } from 'constructs';
 import { AppConstruct, AppProperties } from './types';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
+import { lambdaApi } from './utils/lambda-api';
 
 export class DenoApiConstruct
   extends Construct
@@ -104,13 +104,6 @@ export class DenoApiConstruct
   }
 
   api(path: string): Record<string, HttpRouteIntegration> {
-    this.function.addEnvironment('BASE_PATH', path);
-
-    const integration = new HttpLambdaIntegration(
-      'AppIntegration',
-      this.function
-    );
-
-    return { [`${path}/*`]: integration };
+    return lambdaApi(this.function, path)
   }
 }

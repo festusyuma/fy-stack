@@ -3,7 +3,6 @@ import * as fs from 'node:fs';
 
 import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
-import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
@@ -16,6 +15,7 @@ import { Construct } from 'constructs';
 import { AppConstruct, AppProperties } from './types';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
+import { lambdaApi } from './utils/lambda-api';
 
 interface Props extends AppProperties {
   webLayer?: boolean;
@@ -115,14 +115,7 @@ export class NestConstruct extends Construct implements AppConstruct {
   }
 
   api(path: string) {
-    this.function.addEnvironment('BASE_PATH', path);
-
-    const integration = new HttpLambdaIntegration(
-      'AppIntegration',
-      this.function
-    );
-
-    return { [`${path}/*`]: integration };
+    return lambdaApi(this.function, path)
   }
 
   static clean(output: string, name: string, command: string) {
