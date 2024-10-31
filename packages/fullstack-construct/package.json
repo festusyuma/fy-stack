@@ -10,7 +10,8 @@
     "@fy-stack/secret-construct": "0.0.121",
     "@fy-stack/cdn-construct": "0.0.121",
     "@fy-stack/apigateway-construct": "0.0.121",
-    "@fy-stack/types": "0.0.121"
+    "@fy-stack/types": "0.0.121",
+    "@fy-stack/app-construct": "0.0.121"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.164.1",

@@ -1,3 +1,4 @@
+import { ApiGatewayConstruct } from '@fy-stack/apigateway-construct';
 import {
   type AppConstruct,
   NestApiConstruct,
@@ -14,7 +15,6 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 import { AppType, FullStackConstructProps } from './types';
-import { ApiGatewayConstruct } from '@fy-stack/apigateway-construct';
 
 const AppBuilds = {
   [AppType.NEXT_APP_ROUTER]: NextAppRouterConstruct,
