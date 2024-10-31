@@ -1,8 +1,6 @@
-import type { CDNResource } from '@fy-stack/types';
-import type { Function } from 'aws-cdk-lib/aws-lambda';
+import type { CDNResource, ResourceRef } from '@fy-stack/types';
 
 export interface CDNConstructProps {
-  routes: Record<string, { $app: string } | { $resource: string }>;
-  apps?: Record<string, (CDNResource & { function: Function }) | undefined>;
+  routes: Record<string, ResourceRef>;
   resources?: Record<string, CDNResource | undefined>;
 }
