@@ -1,9 +1,9 @@
 {
   "name": "@fy-stack/database-construct",
-  "version": "0.0.122",
+  "version": "0.0.124",
   "dependencies": {
     "tslib": "^2.3.0",
-    "@fy-stack/types": "0.0.122"
+    "@fy-stack/types": "0.0.124"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.164.1",

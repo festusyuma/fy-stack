@@ -1,8 +1,8 @@
 {
   "name": "@fy-stack/auth-construct",
-  "version": "0.0.122",
+  "version": "0.0.124",
   "dependencies": {
-    "@fy-stack/types": "0.0.122",
+    "@fy-stack/types": "0.0.124",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
