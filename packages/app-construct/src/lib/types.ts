@@ -5,7 +5,7 @@ import { Queue } from 'aws-cdk-lib/aws-sqs';
 export type AppProperties = {
   queue?: { batchSize?: number };
   env?: Record<string, string>;
-  buildPaths: Record<string, string>;
+  buildParams?: Record<string, string>;
   output: string;
 };
 

@@ -1,6 +1,3 @@
-import * as child_process from 'node:child_process';
-import * as fs from 'node:fs';
-
 import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
@@ -8,7 +5,6 @@ import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaEventSource from 'aws-cdk-lib/aws-lambda-event-sources';
 import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
-import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
@@ -16,52 +12,45 @@ import { AppConstruct, AppProperties } from './types';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
 import { lambdaApi } from './utils/lambda-api';
+import path from 'node:path';
+import fs from 'node:fs';
 
-interface Props extends AppProperties {
-  webLayer?: boolean;
-}
-
-export class NestConstruct extends Construct implements AppConstruct {
+export class NodeApiConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
 
-  constructor(scope: Construct, id: string, props: Props) {
+  constructor(scope: Construct, id: string, props: AppProperties) {
     super(scope, id);
 
     const region = cdk.Stack.of(this).region;
-
-    const { serverOutput } = props.buildPaths;
-    if (!serverOutput) throw new Error('asset not found');
-
     const environment = {};
 
     Object.assign(environment, props.env);
 
-    const layers: lambda.ILayerVersion[] = [];
+    const layers: lambda.ILayerVersion[] = [
+      lambda.LayerVersion.fromLayerVersionArn(
+        this,
+        'WebAdapterLayer',
+        `arn:aws:lambda:${region}:753240598075:layer:LambdaAdapterLayerX86:16`
+      )
+    ];
 
-    if (props.webLayer) {
-      layers.push(
-        lambda.LayerVersion.fromLayerVersionArn(
-          this,
-          'WebAdapterLayer',
-          `arn:aws:lambda:${region}:753240598075:layer:LambdaAdapterLayerX86:16`
-        )
-      );
+    Object.assign(environment, {
+      AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
+      AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
+      PORT: '8080',
+    });
 
-      Object.assign(environment, {
-        AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
-        AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
-        PORT: '8080',
-      });
-    }
+    if (!props.buildParams?.command) throw new Error("command is requires in buildParams")
+    fs.writeFileSync(path.join(props.output, 'run.sh'), props.buildParams.command)
 
     this.function = new lambda.Function(this, `AppFunction`, {
       runtime: lambda.Runtime.NODEJS_20_X,
       memorySize: 512,
-      handler: props.webLayer ? 'run.sh' : 'main.handler',
+      handler: 'run.sh',
       layers,
       timeout: cdk.Duration.seconds(30),
-      code: lambda.Code.fromAsset(serverOutput),
+      code: lambda.Code.fromAsset(props.output),
       environment,
     });
 
@@ -87,10 +76,7 @@ export class NestConstruct extends Construct implements AppConstruct {
   }
 
   subscription(props: SubscriptionProps): ITopicSubscription {
-    if (this.queue)
-      return new snsSubscriptions.SqsSubscription(this.queue, props);
-
-    return new snsSubscriptions.LambdaSubscription(this.function, props);
+    throw new Error(`subscription is not supported for ${this}`)
   }
 
   cloudfront(path: string) {
@@ -116,29 +102,5 @@ export class NestConstruct extends Construct implements AppConstruct {
 
   api(path: string) {
     return lambdaApi(this.function, path)
-  }
-
-  static clean(output: string, name: string, command: string) {
-    const destination = `./dist/${name}`;
-
-    /* Delete previous cleaned files */
-    fs.rmSync(destination, { recursive: true, force: true });
-
-    /* Create server and static folders for deployment */
-    fs.mkdirSync(destination, { recursive: true });
-
-    /* copy compiled code to be deployed to the server */
-    fs.cpSync(output, destination, { recursive: true });
-
-    console.log(
-      child_process
-        .execSync(`npm ci`, {
-          stdio: 'pipe',
-          cwd: destination,
-        })
-        .toString()
-    );
-
-    return { serverOutput: destination };
   }
 }

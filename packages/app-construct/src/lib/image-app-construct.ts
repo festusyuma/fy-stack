@@ -32,7 +32,7 @@ import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
 import { lambdaApi } from './utils/lambda-api';
 
-export class DenoApiConstruct
+export class ImageAppConstruct
   extends Construct
   implements AppConstruct
 {
@@ -46,7 +46,7 @@ export class DenoApiConstruct
       memorySize: 512,
       timeout: Duration.seconds(30),
       code: Code.fromAssetImage(props.output, {
-        file: props.buildPaths.dockerFile,
+        file: props.buildParams?.dockerFile,
         platform: Platform.LINUX_AMD64,
       }),
       handler: Handler.FROM_IMAGE,
