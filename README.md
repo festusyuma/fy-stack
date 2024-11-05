@@ -90,5 +90,5 @@ And join the Nx community:
 - [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
 nx g @nx/js:lib packages/fullstack-construct --publishable=true --importPath=@fy-stack/fullstack-construct
-npm version 0.0.122 --workspaces --workspaces-update
+npm version 0.0.125 --workspaces --workspaces-update
 npm publish --access public --workspaces
