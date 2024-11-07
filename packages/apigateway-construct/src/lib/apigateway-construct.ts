@@ -1,5 +1,5 @@
 import { ApiResource } from '@fy-stack/types';
-import { HttpApi, HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
+import { CorsHttpMethod, HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { Construct } from "constructs";
 
 import { ApiGatewayConstructProps } from "./types";
@@ -36,7 +36,14 @@ export class ApiGatewayConstruct extends Construct {
       Object.assign(additionalIntegrations, otherRoutes[i]?.api(i));
     }
 
-    this.api = new HttpApi(this, "Api", { defaultIntegration });
+    this.api = new HttpApi(this, "Api", {
+      defaultIntegration,
+      corsPreflight: {
+        allowHeaders: ["*"],
+        allowOrigins: ["*"],
+        allowMethods: [CorsHttpMethod.ANY],
+      }
+    });
 
     for (const i in additionalIntegrations) {
       this.api.addRoutes({
