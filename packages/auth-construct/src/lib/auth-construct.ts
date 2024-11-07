@@ -6,6 +6,14 @@ import { Construct } from 'constructs';
 
 import { AuthConstructProps } from './types';
 
+/**
+ * AuthConstruct is a construct that sets up an authentication infrastructure
+ * using Amazon Cognito. It creates a user pool, a domain for the user pool,
+ * and a client for the user pool with configurable authentication flows and
+ * token validity. Additionally, it can create user groups within the user pool.
+ *
+ * It extends the Construct class and implements the {@link Attachable `Attachable`} and {@link Grantable `Grantable`} interfaces.
+ */
 export class AuthConstruct extends Construct implements Attachable, Grantable {
   public userPool: cognito.UserPool;
   public domain: cognito.UserPoolDomain;
@@ -63,10 +71,6 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
   }
 
   grantable(grant: iam.IGrantable) {
-    grant.grantPrincipal.addToPrincipalPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: ['cognito-idp:*', 'cognito-identity:*'],
-      resources: [this.userPool.userPoolArn],
-    }))
+    this.userPool.grant(grant, 'cognito-idp:*', 'cognito-identity:*')
   }
 }
