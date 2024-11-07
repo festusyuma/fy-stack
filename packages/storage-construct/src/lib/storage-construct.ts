@@ -8,6 +8,10 @@ import { Construct } from 'constructs';
 import { StorageCdnStack } from './storage-cdn-stack';
 import type { StorageConstructProps } from './types';
 
+/**
+ * The StorageConstruct class is a specialized Construct in the AWS CDK that sets up an S3 bucket
+ * This construct implements the {@link Attachable `Attachable`}, {@link Grantable `Grantable`} and {@link CDNResource `CDNResource`} interfaces.
+ */
 export class StorageConstruct
   extends Construct
   implements Attachable, Grantable, CDNResource

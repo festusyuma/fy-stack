@@ -1,7 +1,14 @@
-# storage-construct
+# Storage Construct Documentation
 
-This library was generated with [Nx](https://nx.dev).
+## `StorageConstruct`
 
-## Building
+The `StorageConstruct` class is a specialized construct in the AWS CDK that sets up an S3 bucket. This construct implements the `Attachable`, `Grantable`, and `CDNResource` interfaces.
 
-Run `nx build storage-construct` to build the library.
+- **Properties**
+    - `bucket: s3.IBucket`
+        - The S3 bucket managed by this construct.
+
+- **Constructor**
+    - `constructor(scope: Construct, id: string, props: StorageConstructProps)`
+        - Initializes the storage construct with a unique identifier and configuration options defined by `StorageConstructProps`.
+

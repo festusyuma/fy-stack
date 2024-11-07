@@ -32,11 +32,8 @@ export type App = {
   buildParams?: Record<string, string>
 };
 
-export type AppRef = { $app: string };
-
-export type AppMessage = AppRef & {
+export type AppMessage = ResourceRef & {
   messages: string[];
-  publish?: boolean;
 };
 
 export type AppCron = {

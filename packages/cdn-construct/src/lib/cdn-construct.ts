@@ -4,6 +4,10 @@ import { Construct } from 'constructs';
 
 import { CDNConstructProps } from './types';
 
+/**
+ * CDNConstruct is a custom construct that sets up a CloudFront distribution
+ * based on provided routing and resource configurations.
+ */
 export class CDNConstruct extends Construct {
   public distribution: cloudfront.Distribution;
 
@@ -40,25 +44,5 @@ export class CDNConstruct extends Construct {
       additionalBehaviors,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
     });
-
-    /*if (props.storage && uploadEnabled) {
-      props.storage.bucket.addToResourcePolicy(
-        new iam.PolicyStatement({
-          effect: iam.Effect.ALLOW,
-          actions: ['s3:GetObject'],
-          principals: [new iam.ServicePrincipal('cloudfront.amazonaws.com')],
-          resources: ['arn:aws:s3:::' + props.storage.bucket.bucketName + '/!*'],
-          conditions: {
-            StringEquals: {
-              'AWS:SourceArn':
-                'arn:aws:cloudfront::' +
-                account +
-                ':distribution/' +
-                this.distribution.distributionId,
-            },
-          },
-        })
-      );
-    }*/
   }
 }

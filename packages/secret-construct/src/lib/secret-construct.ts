@@ -6,6 +6,10 @@ import { Construct } from 'constructs';
 
 import type { SecretConstructProps } from './type';
 
+/**
+ * A construct that manages and encapsulates AWS Secrets Manager secrets.
+ * This construct implements the {@link Attachable `Attachable`} and {@link Grantable `Grantable`} interfaces.
+ */
 export class SecretsConstruct extends Construct implements Attachable, Grantable {
   public readonly secrets: secretsManager.Secret;
 
