@@ -8,6 +8,12 @@ import { Construct } from 'constructs';
 
 import { EventConstructProps } from './types';
 
+/**
+ * The EventConstruct class is a custom construct that creates an SNS topic and manages event subscriptions
+ * and scheduled jobs for the given resources and event definitions.
+ *
+ * It extends the Construct class and implements the {@link Attachable `Attachable`} and {@link Grantable `Grantable`} interfaces.
+ */
 export class EventConstruct extends Construct implements Attachable, Grantable {
   public readonly topic: sns.Topic;
 
@@ -20,8 +26,8 @@ export class EventConstruct extends Construct implements Attachable, Grantable {
       const appMessage = props.events?.messages?.[i];
       if (!appMessage) continue;
 
-      const app = props.resources?.[appMessage.$app];
-      if (!app) throw new Error(`${appMessage.$app} not found`);
+      const app = props.resources?.[appMessage.$resource];
+      if (!app) throw new Error(`${appMessage.$resource} not found`);
 
       const filterPolicy: snsSubscriptions.SubscriptionProps = {
         filterPolicyWithMessageBody: {
