@@ -8,7 +8,10 @@ import {
 } from '@fy-stack/app-construct';
 import { AuthConstruct } from '@fy-stack/auth-construct';
 import { CDNConstruct } from '@fy-stack/cdn-construct';
-import { DatabaseConstruct } from '@fy-stack/database-construct';
+import {
+  DatabaseConstruct,
+  DatabaseUserConstruct,
+} from '@fy-stack/database-construct';
 import { EventConstruct } from '@fy-stack/event-construct';
 import { SecretsConstruct } from '@fy-stack/secret-construct';
 import { StorageConstruct } from '@fy-stack/storage-construct';
@@ -26,7 +29,10 @@ const AppBuilds = {
 export class FullStackConstruct extends Construct {
   public auth?: AuthConstruct;
   public storage?: StorageConstruct;
-  public database?: DatabaseConstruct;
+  public database?: {
+    user: DatabaseUserConstruct;
+    instance: DatabaseConstruct;
+  };
   public event?: EventConstruct;
   public apps?: Record<string, AppConstruct>;
   public cdn?: CDNConstruct;
@@ -48,7 +54,10 @@ export class FullStackConstruct extends Construct {
 
     /* create secrets for test or production environments */
     if (props.database) {
-      this.database = new DatabaseConstruct(this, 'DatabaseConstruct');
+      const instance = new DatabaseConstruct(this, 'DatabaseConstruct', props.database);
+      const user = instance.createDatabase(`${props.appId}-user`, `${props.appId}-db`);
+
+      this.database = { user, instance }
     }
 
     if (props.apps) {
@@ -85,7 +94,8 @@ export class FullStackConstruct extends Construct {
     this.secret = new SecretsConstruct(this, 'SecretConstruct', {
       resources: {
         auth: this.auth,
-        database: this.database,
+        database: this.database?.instance,
+        dbUser: this.database?.user,
         storage: this.storage,
         event: this.event,
       },
@@ -108,7 +118,7 @@ export class FullStackConstruct extends Construct {
 
     const resources = {
       storage: this.storage,
-      database: this.database,
+      database: this.database?.instance,
       auth: this.auth,
       secrets: this.secret,
       event: this.event,

@@ -1,3 +1,4 @@
+import { DatabaseConstructProps } from '@fy-stack/database-construct';
 import { ResourceRef } from '@fy-stack/types';
 import * as events from 'aws-cdk-lib/aws-events';
 
@@ -29,7 +30,7 @@ export type App = {
   output: string;
   attachment?: AppAttachment;
   grant?: AppGrant[];
-  buildParams?: Record<string, string>
+  buildParams?: Record<string, string>;
 };
 
 export type AppMessage = ResourceRef & {
@@ -45,7 +46,7 @@ export type FullStackConstructProps = {
   appId: string;
   auth?: { groups?: string[] };
   storage?: { retainOnDelete?: boolean };
-  database?: boolean;
+  database?: DatabaseConstructProps;
   apps?: Record<string, App>;
   events?: {
     messages?: AppMessage[];
