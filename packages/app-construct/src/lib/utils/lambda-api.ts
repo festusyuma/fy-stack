@@ -1,6 +1,6 @@
+import {  HttpUrlIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Function } from 'aws-cdk-lib/aws-lambda';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import {  HttpUrlIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 
 export function lambdaApi(func: Function, path: string) {
   const apiUrl = func.addFunctionUrl({

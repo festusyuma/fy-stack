@@ -1,10 +1,10 @@
 import { ApiGatewayConstruct } from '@fy-stack/apigateway-construct';
 import {
   type AppConstruct,
+  ImageAppConstruct,
+  NextAppRouterConstruct,
   NodeApiConstruct,
   NodeAppConstruct,
-  NextAppRouterConstruct,
-  ImageAppConstruct,
 } from '@fy-stack/app-construct';
 import { AuthConstruct } from '@fy-stack/auth-construct';
 import { CDNConstruct } from '@fy-stack/cdn-construct';

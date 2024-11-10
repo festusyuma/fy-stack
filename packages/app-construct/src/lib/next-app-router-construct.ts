@@ -1,3 +1,6 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
 import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
@@ -14,8 +17,6 @@ import { Construct } from 'constructs';
 import { AppConstruct, AppProperties } from './types';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
 
 export class NextAppRouterConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;

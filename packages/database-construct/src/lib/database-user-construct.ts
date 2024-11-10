@@ -1,7 +1,7 @@
-import { Construct } from 'constructs';
+import { Attachable } from '@fy-stack/types';
 import { DatabaseInstance, DatabaseSecret } from 'aws-cdk-lib/aws-rds';
 import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
-import { Attachable } from '@fy-stack/types';
+import { Construct } from 'constructs';
 
 type Props = {
   db: DatabaseInstance;

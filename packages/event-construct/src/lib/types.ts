@@ -1,11 +1,11 @@
 import type { Event, ResourceRef } from '@fy-stack/types';
-import type { CronOptions } from 'aws-cdk-lib/aws-events';
 import {
   AuthorizationType,
   CfnApiProps,
   LambdaAuthorizerConfig,
 } from 'aws-cdk-lib/aws-appsync';
 import { UserPool } from 'aws-cdk-lib/aws-cognito';
+import type { CronOptions } from 'aws-cdk-lib/aws-events';
 
 export type AppMessage = ResourceRef & {
   messages: string[];

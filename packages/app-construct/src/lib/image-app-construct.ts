@@ -28,9 +28,9 @@ import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
 import { AppConstruct, AppProperties } from './types';
+import { lambdaApi } from './utils/lambda-api';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
-import { lambdaApi } from './utils/lambda-api';
 
 export class ImageAppConstruct
   extends Construct

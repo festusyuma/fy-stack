@@ -1,5 +1,7 @@
 import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
+import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
+import { BehaviorOptions } from 'aws-cdk-lib/aws-cloudfront';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { LoggingFormat } from 'aws-cdk-lib/aws-lambda';
 import * as lambdaEventSource from 'aws-cdk-lib/aws-lambda-event-sources';
@@ -11,8 +13,6 @@ import { Construct } from 'constructs';
 import { AppConstruct, AppProperties } from './types';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
-import { BehaviorOptions } from 'aws-cdk-lib/aws-cloudfront';
-import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 
 export class NodeAppConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;

@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
@@ -9,11 +12,9 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
 import { AppConstruct, AppProperties } from './types';
+import { lambdaApi } from './utils/lambda-api';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
-import { lambdaApi } from './utils/lambda-api';
-import path from 'node:path';
-import fs from 'node:fs';
 
 export class NodeApiConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;

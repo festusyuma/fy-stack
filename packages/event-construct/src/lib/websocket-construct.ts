@@ -1,7 +1,8 @@
-import { Construct } from 'constructs';
-import { AuthorizationType, CfnApi, CfnApiKey } from 'aws-cdk-lib/aws-appsync';
-import { AuthProviderCapability, WebsocketConstructProps } from './types';
 import { Attachable } from '@fy-stack/types';
+import { AuthorizationType, CfnApi, CfnApiKey } from 'aws-cdk-lib/aws-appsync';
+import { Construct } from 'constructs';
+
+import { AuthProviderCapability, WebsocketConstructProps } from './types';
 
 /**
  * The Websocket class is a custom construct that creates an Appsync Event Api along with the various event configuration

@@ -7,8 +7,8 @@ import { DatabaseInstanceEngine } from 'aws-cdk-lib/aws-rds';
 import * as secretsManager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
-import { DatabaseConstructProps } from './types';
 import { DatabaseUserConstruct } from './database-user-construct';
+import { DatabaseConstructProps } from './types';
 
 /**
  * Represents a database construct that provisions an RDS database instance along with associated secrets.
