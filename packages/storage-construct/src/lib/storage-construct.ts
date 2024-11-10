@@ -17,6 +17,7 @@ export class StorageConstruct
   implements Attachable, Grantable, CDNResource
 {
   public bucket: s3.IBucket;
+  public cloudfrontPolicy?: string
 
   constructor(scope: Construct, id: string, props: StorageConstructProps) {
     super(scope, id);
@@ -39,6 +40,8 @@ export class StorageConstruct
     const storageOriginStack = new StorageCdnStack(this, 'StorageCDNStack', {
       bucketArn: this.bucket.bucketArn,
     });
+
+    this.cloudfrontPolicy = storageOriginStack.policyStatement
 
     const storageBehavior: cloudfront.BehaviorOptions = {
       compress: true,
