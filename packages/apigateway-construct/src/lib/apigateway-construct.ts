@@ -1,9 +1,17 @@
 import { ApiResource } from '@fy-stack/types';
-import { HttpApi, HttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
+import { CorsHttpMethod, HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { Construct } from "constructs";
 
 import { ApiGatewayConstructProps } from "./types";
 
+/**
+ * ApiGatewayConstruct is a construct class for creating an API Gateway with defined routes and integrations.
+ *
+ * The constructor initializes the API Gateway with default and additional integrations based on the provided props.
+ * It sets up CORS preflight options to allow headers, origins, and methods from any source.
+ *
+ * @throws {Error} Throws an error if the base route is not found.
+ */
 export class ApiGatewayConstruct extends Construct {
   public readonly api: HttpApi;
 
@@ -36,7 +44,14 @@ export class ApiGatewayConstruct extends Construct {
       Object.assign(additionalIntegrations, otherRoutes[i]?.api(i));
     }
 
-    this.api = new HttpApi(this, "Api", { defaultIntegration });
+    this.api = new HttpApi(this, "Api", {
+      defaultIntegration,
+      corsPreflight: {
+        allowHeaders: ["*"],
+        allowOrigins: ["*"],
+        allowMethods: [CorsHttpMethod.ANY],
+      }
+    });
 
     for (const i in additionalIntegrations) {
       this.api.addRoutes({

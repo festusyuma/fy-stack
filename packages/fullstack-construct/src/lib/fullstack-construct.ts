@@ -1,9 +1,10 @@
 import { ApiGatewayConstruct } from '@fy-stack/apigateway-construct';
 import {
   type AppConstruct,
-  NestApiConstruct,
-  NestConstruct,
+  ImageAppConstruct,
   NextAppRouterConstruct,
+  NodeApiConstruct,
+  NodeAppConstruct,
 } from '@fy-stack/app-construct';
 import { AuthConstruct } from '@fy-stack/auth-construct';
 import { CDNConstruct } from '@fy-stack/cdn-construct';
@@ -14,13 +15,12 @@ import { StorageConstruct } from '@fy-stack/storage-construct';
 import { Construct } from 'constructs';
 
 import { AppType, FullStackConstructProps } from './types';
-import { DenoApiConstruct } from '@fy-stack/app-construct/dist/lib/deno-api-construct';
 
 const AppBuilds = {
   [AppType.NEXT_APP_ROUTER]: NextAppRouterConstruct,
-  [AppType.NEST]: NestConstruct,
-  [AppType.NEST_API]: NestApiConstruct,
-  [AppType.DENO_API]: DenoApiConstruct,
+  [AppType.NODE_APP]: NodeAppConstruct,
+  [AppType.NODE_API]: NodeApiConstruct,
+  [AppType.IMAGE_APP]: ImageAppConstruct,
 };
 
 export class FullStackConstruct extends Construct {
@@ -43,12 +43,20 @@ export class FullStackConstruct extends Construct {
     }
 
     if (props.storage) {
-      this.storage = new StorageConstruct(this, 'StorageConstruct', props.storage);
+      this.storage = new StorageConstruct(
+        this,
+        'StorageConstruct',
+        props.storage
+      );
     }
 
     /* create secrets for test or production environments */
     if (props.database) {
-      this.database = new DatabaseConstruct(this, 'DatabaseConstruct');
+      this.database = new DatabaseConstruct(
+        this,
+        'DatabaseConstruct',
+        props.database
+      );
     }
 
     if (props.apps) {
@@ -64,13 +72,8 @@ export class FullStackConstruct extends Construct {
               key,
               new AppTypeConstruct(this, `${key}App`, {
                 queue: app.attachment?.queue,
-                output: app.path,
-                buildPaths: {
-                  ...('clean' in AppTypeConstruct
-                    ? AppTypeConstruct.clean(app.path, key, app.command)
-                    : {}),
-                  ...app.buildPaths,
-                },
+                output: app.output,
+                buildParams: app.buildParams,
               }),
             ];
           })

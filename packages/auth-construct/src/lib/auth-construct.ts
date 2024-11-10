@@ -6,9 +6,17 @@ import { Construct } from 'constructs';
 
 import { AuthConstructProps } from './types';
 
+/**
+ * AuthConstruct is a construct that sets up an authentication infrastructure
+ * using Amazon Cognito. It creates a user pool, a domain for the user pool,
+ * and a client for the user pool with configurable authentication flows and
+ * token validity. Additionally, it can create user groups within the user pool.
+ *
+ * It extends the Construct class and implements the {@link Attachable `Attachable`} and {@link Grantable `Grantable`} interfaces.
+ */
 export class AuthConstruct extends Construct implements Attachable, Grantable {
   public userPool: cognito.UserPool;
-  public domain: cognito.UserPoolDomain;
+  public domain?: cognito.UserPoolDomain;
   public client: cognito.UserPoolClient;
 
   constructor(scope: Construct, id: string, props: AuthConstructProps) {
@@ -20,10 +28,12 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
       signInCaseSensitive: false,
     });
 
-    this.domain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
-      userPool: this.userPool,
-      cognitoDomain: { domainPrefix: id.toLowerCase() },
-    });
+    if (props.domainPrefix) {
+      this.domain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
+        userPool: this.userPool,
+        cognitoDomain: { domainPrefix: props.domainPrefix },
+      });
+    }
 
     this.client = new cognito.UserPoolClient(this, 'WebClient', {
       userPool: this.userPool,
@@ -53,20 +63,21 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
   }
 
   attachable() {
-    return {
+    const params = {
       arn: this?.userPool.userPoolArn,
       id: this?.userPool.userPoolId,
-      domainName: this.domain.domainName,
       clientId: this?.client.userPoolClientId,
       clientSecret: this?.client.userPoolClientSecret.unsafeUnwrap(),
     };
+
+    if (this.domain) {
+      Object.assign(params, { domainName: this.domain.domainName, })
+    }
+
+    return params
   }
 
   grantable(grant: iam.IGrantable) {
-    grant.grantPrincipal.addToPrincipalPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: ['cognito-idp:*', 'cognito-identity:*'],
-      resources: [this.userPool.userPoolArn],
-    }))
+    this.userPool.grant(grant, 'cognito-idp:*', 'cognito-identity:*')
   }
 }

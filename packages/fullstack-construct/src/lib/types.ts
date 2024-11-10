@@ -1,10 +1,11 @@
+import { DatabaseConstructProps } from '@fy-stack/database-construct';
 import { ResourceRef } from '@fy-stack/types';
 import * as events from 'aws-cdk-lib/aws-events';
 
 export enum AppType {
-  NEST = 'nest',
-  NEST_API = 'nestApi',
-  DENO_API = 'denoApi',
+  NODE_APP = 'nodeApp',
+  NODE_API = 'nestApi',
+  IMAGE_APP = 'imageApp',
   NEXT_APP_ROUTER = 'nextAppRouter',
 }
 
@@ -26,18 +27,14 @@ export enum AppGrant {
 
 export type App = {
   type: AppType;
-  path: string;
+  output: string;
   attachment?: AppAttachment;
   grant?: AppGrant[];
-  command: string;
-  buildPaths?: Record<string, string>
+  buildParams?: Record<string, string>;
 };
 
-export type AppRef = { $app: string };
-
-export type AppMessage = AppRef & {
+export type AppMessage = ResourceRef & {
   messages: string[];
-  publish?: boolean;
 };
 
 export type AppCron = {
@@ -49,7 +46,7 @@ export type FullStackConstructProps = {
   appId: string;
   auth?: { groups?: string[] };
   storage?: { retainOnDelete?: boolean };
-  database?: boolean;
+  database?: DatabaseConstructProps;
   apps?: Record<string, App>;
   events?: {
     messages?: AppMessage[];

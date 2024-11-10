@@ -1,7 +1,13 @@
-# secret-construct
+# Secrets Construct Documentation
 
-This library was generated with [Nx](https://nx.dev).
+## `SecretsConstruct`
 
-## Building
+A construct that manages and encapsulates AWS Secrets Manager secrets. This construct implements the `Attachable` and `Grantable` interfaces.
 
-Run `nx build secret-construct` to build the library.
+- **Properties**
+    - `secrets: secretsManager.Secret`
+        - The AWS Secrets Manager secret managed by this construct.
+
+- **Constructor**
+    - `constructor(scope: Construct, id: string, props: SecretConstructProps)`
+        - Initializes the secrets construct with a unique identifier and configuration options defined by `SecretConstructProps`.

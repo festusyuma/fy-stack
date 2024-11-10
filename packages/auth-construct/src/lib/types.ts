@@ -10,4 +10,6 @@ export interface AuthConstructProps {
     /** Refresh token validity in hours */
     refreshTokenValidity?: number;
   };
+  /** Domain name prefix */
+  domainPrefix?: string
 }
