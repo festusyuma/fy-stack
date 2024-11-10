@@ -16,7 +16,7 @@ import { AuthConstructProps } from './types';
  */
 export class AuthConstruct extends Construct implements Attachable, Grantable {
   public userPool: cognito.UserPool;
-  public domain: cognito.UserPoolDomain;
+  public domain?: cognito.UserPoolDomain;
   public client: cognito.UserPoolClient;
 
   constructor(scope: Construct, id: string, props: AuthConstructProps) {
@@ -28,10 +28,12 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
       signInCaseSensitive: false,
     });
 
-    this.domain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
-      userPool: this.userPool,
-      cognitoDomain: { domainPrefix: id.toLowerCase() },
-    });
+    if (props.domainPrefix) {
+      this.domain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
+        userPool: this.userPool,
+        cognitoDomain: { domainPrefix: props.domainPrefix },
+      });
+    }
 
     this.client = new cognito.UserPoolClient(this, 'WebClient', {
       userPool: this.userPool,
@@ -61,13 +63,18 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
   }
 
   attachable() {
-    return {
+    const params = {
       arn: this?.userPool.userPoolArn,
       id: this?.userPool.userPoolId,
-      domainName: this.domain.domainName,
       clientId: this?.client.userPoolClientId,
       clientSecret: this?.client.userPoolClientSecret.unsafeUnwrap(),
     };
+
+    if (this.domain) {
+      Object.assign(params, { domainName: this.domain.domainName, })
+    }
+
+    return params
   }
 
   grantable(grant: iam.IGrantable) {
