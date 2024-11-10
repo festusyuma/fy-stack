@@ -4,6 +4,14 @@ import { Construct } from "constructs";
 
 import { ApiGatewayConstructProps } from "./types";
 
+/**
+ * ApiGatewayConstruct is a construct class for creating an API Gateway with defined routes and integrations.
+ *
+ * The constructor initializes the API Gateway with default and additional integrations based on the provided props.
+ * It sets up CORS preflight options to allow headers, origins, and methods from any source.
+ *
+ * @throws {Error} Throws an error if the base route is not found.
+ */
 export class ApiGatewayConstruct extends Construct {
   public readonly api: HttpApi;
 
