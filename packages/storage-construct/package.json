@@ -1,9 +1,9 @@
 {
   "name": "@fy-stack/storage-construct",
-  "version": "0.0.125",
+  "version": "0.0.126",
   "dependencies": {
     "tslib": "^2.3.0",
-    "@fy-stack/types": "0.0.125"
+    "@fy-stack/types": "0.0.126"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.166.0",
