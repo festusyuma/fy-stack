@@ -6,7 +6,7 @@
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "2.164.1",
+    "aws-cdk-lib": "2.166.0",
     "constructs": "10.4.2"
   },
   "main": "./dist/index.js",
