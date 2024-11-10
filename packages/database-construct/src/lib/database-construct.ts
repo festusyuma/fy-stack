@@ -8,6 +8,7 @@ import * as secretsManager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 import { DatabaseConstructProps } from './types';
+import { DatabaseUserConstruct } from './database-user-construct';
 
 /**
  * Represents a database construct that provisions an RDS database instance along with associated secrets.
@@ -17,14 +18,11 @@ export class DatabaseConstruct
   extends Construct
   implements Attachable, Grantable
 {
-  public dbSecrets: secretsManager.ISecret;
+  public secrets: secretsManager.ISecret;
   public db: rds.DatabaseInstance;
-  public dbName: string;
 
-  constructor(scope: Construct, id: string, props?: DatabaseConstructProps) {
+  constructor(scope: Construct, id: string, props: DatabaseConstructProps) {
     super(scope, id);
-
-    this.dbName = `${this.node.id}-db`;
 
     const vpc = ec2.Vpc.fromLookup(
       this,
@@ -32,27 +30,27 @@ export class DatabaseConstruct
       props?.vpcId ? { vpcId: props.vpcId } : { isDefault: true }
     );
 
-    const credentials = rds.Credentials.fromGeneratedSecret(
-      `${this.dbName}-user`,
-      {}
-    );
-    if (!credentials.secret)
-      throw new Error('Could not create database credentials');
-
-    this.dbSecrets = credentials.secret;
-
     this.db = new rds.DatabaseInstance(this, 'DB', {
       vpc,
       engine: props?.engine ?? DatabaseInstanceEngine.POSTGRES,
       instanceType: ec2.InstanceType.of(
-        props?.instance?.class ?? ec2.InstanceClass.T3,
-        props?.instance?.size ?? ec2.InstanceSize.NANO
+        props?.instance?.class ?? ec2.InstanceClass.T4G,
+        props?.instance?.size ?? ec2.InstanceSize.MICRO
       ),
       publiclyAccessible: props?.public,
-      databaseName: this.dbName,
-      credentials,
-      ...(props?.additionalData ?? {}),
+      vpcSubnets: {
+        subnetType: props?.public
+          ? ec2.SubnetType.PUBLIC
+          : ec2.SubnetType.PRIVATE_ISOLATED,
+      },
     });
+
+    this.db.addRotationSingleUser()
+
+    if (!this.db.secret)
+      throw new Error('Could not create database credentials secret');
+
+    this.secrets = this.db.secret;
   }
 
   grantable(grant: IGrantable) {
@@ -62,7 +60,7 @@ export class DatabaseConstruct
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['secretsmanager:GetSecretValue'],
-        resources: [this.dbSecrets.secretArn],
+        resources: [this.secrets.secretArn],
       })
     );
   }
@@ -70,9 +68,17 @@ export class DatabaseConstruct
   attachable() {
     return {
       arn: this.db.instanceArn,
-      name: this.dbName,
-      secretsArn: this.dbSecrets.secretArn,
-      secretsName: this.dbSecrets.secretName,
+      secretsArn: this.secrets.secretArn,
+      secretsName: this.secrets.secretName,
     };
+  }
+
+  createDatabase(username: string, dbName: string) {
+    return new DatabaseUserConstruct(this, username + 'DatabaseUserStack', {
+      username,
+      dbName,
+      db: this.db,
+      masterSecret: this.secrets,
+    });
   }
 }
