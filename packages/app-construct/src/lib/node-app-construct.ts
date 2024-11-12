@@ -13,6 +13,7 @@ import { Construct } from 'constructs';
 import { AppConstruct, AppProperties } from './types';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
+import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 
 export class NodeAppConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
@@ -68,6 +69,13 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
   }
 
   api(path: string): Record<string, HttpRouteIntegration> {
-    throw new Error(`api not supported for ${this}`)
+    this.function.addEnvironment('BASE_PATH', path);
+
+    const integration = new HttpLambdaIntegration(
+      'AppIntegration',
+      this.function
+    );
+
+    return { [`${path}/*`]: integration };
   }
 }
