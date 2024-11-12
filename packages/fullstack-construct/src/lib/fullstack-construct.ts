@@ -3,6 +3,7 @@ import {
   type AppConstruct,
   ImageAppConstruct,
   NextAppRouterConstruct,
+  NextPagesExportConstruct,
   NodeApiConstruct,
   NodeAppConstruct,
 } from '@fy-stack/app-construct';
@@ -18,6 +19,7 @@ import { AppType, FullStackConstructProps } from './types';
 
 const AppBuilds = {
   [AppType.NEXT_APP_ROUTER]: NextAppRouterConstruct,
+  [AppType.NEXT_PAGE_EXPORT]: NextPagesExportConstruct,
   [AppType.NODE_APP]: NodeAppConstruct,
   [AppType.NODE_API]: NodeApiConstruct,
   [AppType.IMAGE_APP]: ImageAppConstruct,
@@ -103,6 +105,7 @@ export class FullStackConstruct extends Construct {
     if (props.cdn) {
       this.cdn = new CDNConstruct(this, 'CDNConstruct', {
         routes: props.cdn.routes,
+        domains: props.cdn.domains,
         resources: { ...this.apps, uploads: this.storage },
       });
     }
@@ -125,19 +128,21 @@ export class FullStackConstruct extends Construct {
     type ResourceKey = keyof typeof resources;
 
     for (const i in props.apps) {
-      this.apps?.[i]?.attach(
-        Object.fromEntries(
-          Object.entries(props.apps[i]?.attachment ?? {})
-            .map(([key]) => [key, resources[key as ResourceKey]])
-            .filter((v) => !!v)
-        )
-      );
+      const attachments =  Object.entries(props.apps[i]?.attachment ?? {})
+        .map(([key]) => [key, resources[key as ResourceKey]])
+        .filter((v) => !!v)
 
-      this.apps?.[i]?.grant(
-        ...(props.apps[i]?.grant
-          ?.map((val) => resources[val as ResourceKey])
-          .filter((v) => !!v) ?? [])
-      );
+      if (attachments.length) {
+        this.apps?.[i]?.attach(Object.fromEntries(attachments));
+      }
+
+      const grants = (props.apps[i]?.grant
+        ?.map((val) => resources[val as ResourceKey])
+        .filter((v) => !!v) ?? [])
+
+      if (grants.length) {
+        this.apps?.[i]?.grant(...grants);
+      }
     }
   }
 }
