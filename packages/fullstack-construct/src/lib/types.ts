@@ -1,12 +1,14 @@
 import { DatabaseConstructProps } from '@fy-stack/database-construct';
 import { ResourceRef } from '@fy-stack/types';
 import * as events from 'aws-cdk-lib/aws-events';
+import { CDNConstructProps } from '@fy-stack/cdn-construct';
 
 export enum AppType {
   NODE_APP = 'nodeApp',
   NODE_API = 'nestApi',
   IMAGE_APP = 'imageApp',
   NEXT_APP_ROUTER = 'nextAppRouter',
+  NEXT_PAGE_EXPORT = 'nextPageExport',
 }
 
 export type AppAttachment = {
@@ -52,7 +54,7 @@ export type FullStackConstructProps = {
     messages?: AppMessage[];
     cron?: AppCron[];
   };
-  cdn?: { routes: Record<string, ResourceRef> };
+  cdn?: Omit<CDNConstructProps, "resources">;
   api?: { routes: Record<string, ResourceRef> };
   secrets?: Record<string, string | undefined>;
 };

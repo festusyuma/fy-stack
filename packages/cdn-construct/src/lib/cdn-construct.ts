@@ -1,8 +1,11 @@
 import type { CDNResource } from '@fy-stack/types';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import { Construct } from 'constructs';
 
 import { CDNConstructProps } from './types';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 
 /**
  * CDNConstruct is a custom construct that sets up a CloudFront distribution
@@ -39,10 +42,100 @@ export class CDNConstruct extends Construct {
       Object.assign(additionalBehaviors, otherRoutes[i]?.cloudfront(i));
     }
 
+    let certificate: acm.Certificate | undefined;
+    let defaultDomainName: string | undefined;
+
+    const subjectAlternativeNames: string[] = [];
+    const zones: Record<string, route53.IHostedZone> = {};
+
+    if (props.domains) {
+      const [defaultDomain, ...otherRecords] = props.domains;
+      if (defaultDomain) {
+        const {
+          records: [defaultDomainRecord, ...otherDefaultDomainRecords],
+        } = defaultDomain;
+
+        defaultDomainName = this.parseDomain(
+          defaultDomainRecord,
+          defaultDomain.domain
+        );
+
+        zones[defaultDomain.domain] = route53.HostedZone.fromLookup(
+          this,
+          'Zone0',
+          { domainName: defaultDomain.domain }
+        );
+
+        zones[defaultDomainName] = zones[defaultDomain.domain];
+
+        for (const i in otherDefaultDomainRecords) {
+          const recordDomain = this.parseDomain(
+            otherDefaultDomainRecords[i],
+            defaultDomain.domain
+          );
+
+          zones[recordDomain] = zones[defaultDomain.domain];
+          subjectAlternativeNames.push(recordDomain);
+        }
+
+        for (const i in otherRecords) {
+          zones[otherRecords[i].domain] = route53.HostedZone.fromLookup(
+            this,
+            `Zone${i + 1}`,
+            { domainName: otherRecords[i].domain }
+          );
+
+          for (const j in otherRecords[i].records) {
+            const recordDomain = this.parseDomain(
+              otherRecords[i].records[j],
+              otherRecords[i].domain
+            );
+
+            zones[recordDomain] = zones[otherRecords[i].domain];
+            subjectAlternativeNames.push(recordDomain);
+          }
+        }
+
+        certificate = new acm.Certificate(this, 'DomainCertificate', {
+          domainName: defaultDomainName,
+          subjectAlternativeNames,
+          validation: acm.CertificateValidation.fromDnsMultiZone(zones),
+        });
+      }
+    }
+
     this.distribution = new cloudfront.Distribution(this, 'CDN', {
       defaultBehavior,
       additionalBehaviors,
+      certificate,
+      domainNames: defaultDomainName
+        ? [defaultDomainName, ...subjectAlternativeNames]
+        : undefined,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
     });
+
+    if (props.domains) {
+      const distributionTarget = new route53Targets.CloudFrontTarget(
+        this.distribution
+      );
+
+      for (const i in props.domains) {
+        for (const j in props.domains[i].records) {
+          new route53.ARecord(this, `Record${i}${j}`, {
+            target: { aliasTarget: distributionTarget },
+            zone: zones[props.domains[i].domain],
+            recordName:
+              props.domains[i].records[j] === '*'
+                ? undefined
+                : props.domains[i].records[j],
+          });
+        }
+      }
+    }
+  }
+
+  private parseDomain(record: string, domain: string) {
+    if (record === '*') return domain;
+    else return `${record}.${domain}`;
   }
 }

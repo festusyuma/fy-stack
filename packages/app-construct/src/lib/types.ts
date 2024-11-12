@@ -10,6 +10,6 @@ export type AppProperties = {
 };
 
 export interface AppConstruct extends Attach, Grant, CDNResource, Event, ApiResource {
-  function: Function;
+  function?: Function;
   queue?: Queue
 }
