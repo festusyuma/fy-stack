@@ -1,9 +1,9 @@
 {
   "name": "@fy-stack/apigateway-construct",
-  "version": "0.0.128",
+  "version": "0.0.129",
   "dependencies": {
     "tslib": "^2.3.0",
-    "@fy-stack/types": "0.0.128"
+    "@fy-stack/types": "0.0.129"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.166.0",
