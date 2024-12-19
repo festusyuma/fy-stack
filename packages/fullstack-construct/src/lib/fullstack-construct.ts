@@ -6,6 +6,7 @@ import {
   NextPagesExportConstruct,
   NodeApiConstruct,
   NodeAppConstruct,
+  StaticWebsiteConstruct,
 } from '@fy-stack/app-construct';
 import { AuthConstruct } from '@fy-stack/auth-construct';
 import { CDNConstruct } from '@fy-stack/cdn-construct';
@@ -24,6 +25,7 @@ const AppBuilds = {
   [AppType.NODE_APP]: NodeAppConstruct,
   [AppType.NODE_API]: NodeApiConstruct,
   [AppType.IMAGE_APP]: ImageAppConstruct,
+  [AppType.STATIC_WEBSITE]: StaticWebsiteConstruct,
 };
 
 /**
