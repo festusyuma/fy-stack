@@ -9,7 +9,7 @@ import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 
-export class ReactStaticConstruct extends Construct implements AppConstruct {
+export class StaticWebsiteConstruct extends Construct implements AppConstruct {
   private readonly static: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: AppProperties) {
