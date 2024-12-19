@@ -101,6 +101,10 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
     return { [`${path}/*`]: apiBehavior };
   }
 
+  cloudfrontPolicy(distributionId: string) {
+    throw new Error(`cloudfrontPolicy not supported for ${this}`);
+  }
+
   api(path: string) {
     return lambdaApi(this.function, path)
   }

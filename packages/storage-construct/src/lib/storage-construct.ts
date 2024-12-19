@@ -7,6 +7,7 @@ import { Construct } from 'constructs';
 
 import { StorageCdnStack } from './storage-cdn-stack';
 import type { StorageConstructProps } from './types';
+import { Stack } from 'aws-cdk-lib';
 
 /**
  * The StorageConstruct class is a specialized Construct in the AWS CDK that sets up an S3 bucket
@@ -17,7 +18,6 @@ export class StorageConstruct
   implements Attachable, Grantable, CDNResource
 {
   public bucket: s3.IBucket;
-  public cloudfrontPolicy?: string
 
   constructor(scope: Construct, id: string, props: StorageConstructProps) {
     super(scope, id);
@@ -41,8 +41,6 @@ export class StorageConstruct
       bucketArn: this.bucket.bucketArn,
     });
 
-    this.cloudfrontPolicy = storageOriginStack.policyStatement
-
     const storageBehavior: cloudfront.BehaviorOptions = {
       compress: true,
       origin: storageOriginStack.storageOrigin,
@@ -53,6 +51,26 @@ export class StorageConstruct
     };
 
     return { [`${path}/*`]: storageBehavior };
+  }
+
+  cloudfrontPolicy(distributionId: string) {
+    const account = Stack.of(this).account;
+
+    return new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['s3:GetObject'],
+      principals: [new iam.ServicePrincipal('cloudfront.amazonaws.com')],
+      resources: ['arn:aws:s3:::' + this.bucket.bucketName + '/*'],
+      conditions: {
+        StringEquals: {
+          'AWS:SourceArn':
+            'arn:aws:cloudfront::' +
+            account +
+            ':distribution/' +
+            distributionId,
+        },
+      },
+    }).toStatementJson()
   }
 
   attachable() {

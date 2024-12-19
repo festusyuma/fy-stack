@@ -68,6 +68,10 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
     throw new Error(`cloudfront not supported for ${this}`)
   }
 
+  cloudfrontPolicy(distributionId: string) {
+    throw new Error(`cloudfrontPolicy not supported for ${this}`);
+  }
+
   api(path: string): Record<string, HttpRouteIntegration> {
     this.function.addEnvironment('BASE_PATH', path);
 

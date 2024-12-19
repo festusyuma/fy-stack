@@ -52,6 +52,10 @@ export interface CDNResource {
    * Generate map of paths to Cloudfront BehaviorOptions.
    * */
   cloudfront(path: string): Record<string, BehaviorOptions>;
+  /**
+   * Generate policy statement as json.
+   * */
+  cloudfrontPolicy(distributionId: string): unknown;
 }
 
 /**

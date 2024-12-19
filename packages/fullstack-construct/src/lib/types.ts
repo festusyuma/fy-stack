@@ -9,6 +9,7 @@ export enum AppType {
   IMAGE_APP = 'imageApp',
   NEXT_APP_ROUTER = 'nextAppRouter',
   NEXT_PAGE_EXPORT = 'nextPageExport',
+  STATIC_WEBSITE = 'staticWebsite',
 }
 
 export type AppAttachment = {
@@ -45,6 +46,7 @@ export type AppCron = {
 };
 
 export type FullStackConstructProps = {
+  vpcId?: string,
   appId: string;
   auth?: { groups?: string[] };
   storage?: { retainOnDelete?: boolean };

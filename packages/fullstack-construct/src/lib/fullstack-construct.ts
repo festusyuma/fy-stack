@@ -6,6 +6,7 @@ import {
   NextPagesExportConstruct,
   NodeApiConstruct,
   NodeAppConstruct,
+  StaticWebsiteConstruct,
 } from '@fy-stack/app-construct';
 import { AuthConstruct } from '@fy-stack/auth-construct';
 import { CDNConstruct } from '@fy-stack/cdn-construct';
@@ -13,6 +14,7 @@ import { DatabaseConstruct } from '@fy-stack/database-construct';
 import { EventConstruct } from '@fy-stack/event-construct';
 import { SecretsConstruct } from '@fy-stack/secret-construct';
 import { StorageConstruct } from '@fy-stack/storage-construct';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
 import { AppType, FullStackConstructProps } from './types';
@@ -23,11 +25,16 @@ const AppBuilds = {
   [AppType.NODE_APP]: NodeAppConstruct,
   [AppType.NODE_API]: NodeApiConstruct,
   [AppType.IMAGE_APP]: ImageAppConstruct,
+  [AppType.STATIC_WEBSITE]: StaticWebsiteConstruct,
 };
 
+/**
+ *
+ */
 export class FullStackConstruct extends Construct {
   public auth?: AuthConstruct;
   public storage?: StorageConstruct;
+  public storagePolicy?: string;
   public database?: DatabaseConstruct;
   public event?: EventConstruct;
   public apps?: Record<string, AppConstruct>;
@@ -37,6 +44,12 @@ export class FullStackConstruct extends Construct {
 
   constructor(scope: Construct, id: string, props: FullStackConstructProps) {
     super(scope, id);
+
+    const vpc = ec2.Vpc.fromLookup(
+      this,
+      'VPC',
+      props.vpcId ? { vpcId: props.vpcId } : { isDefault: true }
+    );
 
     if (props.auth) {
       this.auth = new AuthConstruct(this, props.appId + 'AuthConstruct', {
@@ -54,11 +67,10 @@ export class FullStackConstruct extends Construct {
 
     /* create secrets for test or production environments */
     if (props.database) {
-      this.database = new DatabaseConstruct(
-        this,
-        'DatabaseConstruct',
-        props.database
-      );
+      this.database = new DatabaseConstruct(this, 'DatabaseConstruct', {
+        ...props.database,
+        vpcId: vpc.vpcId,
+      });
     }
 
     if (props.apps) {
@@ -127,18 +139,23 @@ export class FullStackConstruct extends Construct {
 
     type ResourceKey = keyof typeof resources;
 
+    if (this.storage && this.cdn) {
+      this.storagePolicy = JSON.stringify(this.storage.cloudfrontPolicy(this.cdn.distribution.distributionId))
+    }
+
     for (const i in props.apps) {
-      const attachments =  Object.entries(props.apps[i]?.attachment ?? {})
+      const attachments = Object.entries(props.apps[i]?.attachment ?? {})
         .map(([key]) => [key, resources[key as ResourceKey]])
-        .filter((v) => !!v)
+        .filter((v) => !!v);
 
       if (attachments.length) {
         this.apps?.[i]?.attach(Object.fromEntries(attachments));
       }
 
-      const grants = (props.apps[i]?.grant
-        ?.map((val) => resources[val as ResourceKey])
-        .filter((v) => !!v) ?? [])
+      const grants =
+        props.apps[i]?.grant
+          ?.map((val) => resources[val as ResourceKey])
+          .filter((v) => !!v) ?? [];
 
       if (grants.length) {
         this.apps?.[i]?.grant(...grants);

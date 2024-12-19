@@ -1,18 +1,15 @@
-import * as path from 'node:path';
-
+import { AppConstruct, AppProperties } from './types';
+import { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import { Attachable, Grantable } from '@fy-stack/types';
-import * as cdk from 'aws-cdk-lib';
-import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
+import { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
-import { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
+import * as cdk from 'aws-cdk-lib';
 
-import { AppConstruct, AppProperties } from './types';
-
-export class NextPagesExportConstruct extends Construct implements AppConstruct {
+export class StaticWebsiteConstruct extends Construct implements AppConstruct {
   private readonly static: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: AppProperties) {
@@ -36,14 +33,7 @@ export class NextPagesExportConstruct extends Construct implements AppConstruct 
 
     new s3Deploy.BucketDeployment(this, `StaticDeployment`, {
       destinationBucket: this.static,
-      sources: [s3Deploy.Source.asset(path.join(props.output, "/.next")),],
-      retainOnDelete: false,
-    });
-
-    new s3Deploy.BucketDeployment(this, `PublicDeployment`, {
-      destinationBucket: this.static,
-      sources: [s3Deploy.Source.asset(path.join(props.output, "/public"))],
-      destinationKeyPrefix: "public",
+      sources: [s3Deploy.Source.asset(props.output),],
       retainOnDelete: false,
     });
   }

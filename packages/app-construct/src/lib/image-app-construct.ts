@@ -103,6 +103,10 @@ export class ImageAppConstruct
     return { [`${path}/*`]: apiBehavior };
   }
 
+  cloudfrontPolicy(distributionId: string) {
+    throw new Error("cloudfrontPolicy not implemented");
+  }
+
   api(path: string): Record<string, HttpRouteIntegration> {
     return lambdaApi(this.function, path)
   }
