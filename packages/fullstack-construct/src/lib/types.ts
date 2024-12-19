@@ -45,6 +45,7 @@ export type AppCron = {
 };
 
 export type FullStackConstructProps = {
+  vpcId?: string,
   appId: string;
   auth?: { groups?: string[] };
   storage?: { retainOnDelete?: boolean };
