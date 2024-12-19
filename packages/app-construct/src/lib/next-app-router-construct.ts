@@ -108,7 +108,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
     };
 
-    const appCachePolicy = new cloudfront.CachePolicy(this, "ImagePolicy", {
+    const imageCachePolicy = new cloudfront.CachePolicy(this, "ImagePolicy", {
       queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
       maxTtl: cdk.Duration.days(365),
       enableAcceptEncodingGzip: true,
@@ -123,7 +123,6 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       originRequestPolicy:
         cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
-
       responseHeadersPolicy:
         cloudfront.ResponseHeadersPolicy
           .CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
@@ -133,12 +132,16 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       [`${path}/*`]: appBehaviour,
       [`${path}/_next/image`]: {
         ...appBehaviour,
-        cachePolicy: appCachePolicy,
+        cachePolicy: imageCachePolicy,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
       },
       [`${path}/_next/*`]: staticBehavior,
       [`${path}/*.ico`]: staticBehavior,
     };
+  }
+
+  cloudfrontPolicy(distributionId: string) {
+    throw new Error(`cloudfrontPolicy not supported for ${this}`);
   }
 
   api(): Record<string, HttpRouteIntegration> {
