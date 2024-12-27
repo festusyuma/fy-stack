@@ -33,6 +33,7 @@ export type App = {
   output: string;
   attachment?: AppAttachment;
   grant?: AppGrant[];
+  env?: Record<string, string>
   buildParams?: Record<string, string>;
 };
 

@@ -49,6 +49,7 @@ export class ImageAppConstruct
         file: props.buildParams?.dockerFile,
         platform: Platform.LINUX_AMD64,
       }),
+      environment: props.env,
       handler: Handler.FROM_IMAGE,
       runtime: Runtime.FROM_IMAGE,
     });

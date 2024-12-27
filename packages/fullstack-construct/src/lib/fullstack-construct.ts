@@ -32,6 +32,7 @@ const AppBuilds = {
  *
  */
 export class FullStackConstruct extends Construct {
+  public vpc: ec2.IVpc;
   public auth?: AuthConstruct;
   public storage?: StorageConstruct;
   public storagePolicy?: string;
@@ -45,7 +46,7 @@ export class FullStackConstruct extends Construct {
   constructor(scope: Construct, id: string, props: FullStackConstructProps) {
     super(scope, id);
 
-    const vpc = ec2.Vpc.fromLookup(
+    this.vpc = ec2.Vpc.fromLookup(
       this,
       'VPC',
       props.vpcId ? { vpcId: props.vpcId } : { isDefault: true }
@@ -69,7 +70,7 @@ export class FullStackConstruct extends Construct {
     if (props.database) {
       this.database = new DatabaseConstruct(this, 'DatabaseConstruct', {
         ...props.database,
-        vpcId: vpc.vpcId,
+        vpcId: this.vpc.vpcId,
       });
     }
 
@@ -88,6 +89,7 @@ export class FullStackConstruct extends Construct {
                 queue: app.attachment?.queue,
                 output: app.output,
                 buildParams: app.buildParams,
+                env: app.env,
               }),
             ];
           })
