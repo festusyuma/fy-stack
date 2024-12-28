@@ -88,8 +88,10 @@ export class FullStackConstruct extends Construct {
               new AppTypeConstruct(this, `${key}App`, {
                 queue: app.attachment?.queue,
                 output: app.output,
-                buildParams: app.buildParams,
+                // @ts-expect-error invalid params
+                buildParams: AppTypeConstruct.parse(app.buildParams ?? {}),
                 env: app.env,
+                vpc: this.vpc,
               }),
             ];
           })

@@ -1,7 +1,7 @@
+import { CDNConstructProps } from '@fy-stack/cdn-construct';
 import { DatabaseConstructProps } from '@fy-stack/database-construct';
 import { ResourceRef } from '@fy-stack/types';
 import * as events from 'aws-cdk-lib/aws-events';
-import { CDNConstructProps } from '@fy-stack/cdn-construct';
 
 export enum AppType {
   NODE_APP = 'nodeApp',
@@ -34,7 +34,7 @@ export type App = {
   attachment?: AppAttachment;
   grant?: AppGrant[];
   env?: Record<string, string>
-  buildParams?: Record<string, string>;
+  buildParams?: Record<string, unknown>;
 };
 
 export type AppMessage = ResourceRef & {

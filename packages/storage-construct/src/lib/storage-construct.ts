@@ -1,5 +1,6 @@
 import { Attachable, CDNResource, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
+import { Stack } from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
@@ -7,7 +8,6 @@ import { Construct } from 'constructs';
 
 import { StorageCdnStack } from './storage-cdn-stack';
 import type { StorageConstructProps } from './types';
-import { Stack } from 'aws-cdk-lib';
 
 /**
  * The StorageConstruct class is a specialized Construct in the AWS CDK that sets up an S3 bucket

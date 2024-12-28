@@ -1,11 +1,11 @@
 import type { CDNResource } from '@fy-stack/types';
-import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 
 import { CDNConstructProps } from './types';
-import * as route53 from 'aws-cdk-lib/aws-route53';
-import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 
 /**
  * CDNConstruct is a custom construct that sets up a CloudFront distribution
