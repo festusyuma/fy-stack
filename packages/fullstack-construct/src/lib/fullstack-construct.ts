@@ -14,6 +14,7 @@ import { DatabaseConstruct } from '@fy-stack/database-construct';
 import { EventConstruct } from '@fy-stack/event-construct';
 import { SecretsConstruct } from '@fy-stack/secret-construct';
 import { StorageConstruct } from '@fy-stack/storage-construct';
+import { CfnOutput } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
@@ -124,6 +125,11 @@ export class FullStackConstruct extends Construct {
         domains: props.cdn.domains,
         resources: { ...this.apps, uploads: this.storage },
       });
+
+      new CfnOutput(this, 'CDN Url', {
+        key: 'cdnURl',
+        value: 'https://' + this.cdn.distribution.domainName,
+      });
     }
 
     if (props.api) {
@@ -131,6 +137,13 @@ export class FullStackConstruct extends Construct {
         routes: props.api.routes,
         resources: this.apps,
       });
+
+      if (this.api.api.url) {
+        new CfnOutput(this, 'Api Url', {
+          key: 'apiUrl',
+          value: this.api.api.url,
+        });
+      }
     }
 
     const resources = {
@@ -144,7 +157,14 @@ export class FullStackConstruct extends Construct {
     type ResourceKey = keyof typeof resources;
 
     if (this.storage && this.cdn) {
-      this.storagePolicy = JSON.stringify(this.storage.cloudfrontPolicy(this.cdn.distribution.distributionId))
+      this.storagePolicy = JSON.stringify(
+        this.storage.cloudfrontPolicy(this.cdn.distribution.distributionId)
+      );
+
+      new CfnOutput(this, 'StorageBucketCDNPolicy', {
+        key: 'storageBucketCDNPolicy',
+        value: this.storagePolicy
+      });
     }
 
     for (const i in props.apps) {
