@@ -32,6 +32,9 @@
     },
     {
       "path": "./packages/apigateway-construct"
+    },
+    {
+      "path": "./packages/task-construct"
     }
   ]
 }
