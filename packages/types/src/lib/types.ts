@@ -61,7 +61,7 @@ export interface CDNResource {
 /**
  * Resource can subscribe to an SNS topic
  * */
-export interface Event {
+export interface EventResource {
   /**
    * Subscribe to SNS topic.
    * */

@@ -1,13 +1,14 @@
 {
   "name": "@fy-stack/database-construct",
-  "version": "0.0.129",
+  "version": "0.0.130",
+  "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "tslib": "^2.3.0",
-    "@fy-stack/types": "0.0.129"
+    "@fy-stack/types": "0.0.130",
+    "tslib": "^2.3.0"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "2.166.0",
-    "constructs": "10.4.2"
+    "aws-cdk-lib": "^2.174.1",
+    "constructs": "^10.4.2"
   },
   "type": "commonjs",
   "main": "./dist/index.js",

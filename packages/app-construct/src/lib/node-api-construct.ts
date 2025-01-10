@@ -10,17 +10,22 @@ import * as lambdaEventSource from 'aws-cdk-lib/aws-lambda-event-sources';
 import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
+import { z } from 'zod';
 
 import { AppConstruct, AppProperties } from './types';
 import { lambdaApi } from './utils/lambda-api';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
 
+const BuildParamsSchema = z.object({
+  cmd: z.string(),
+})
+
 export class NodeApiConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
 
-  constructor(scope: Construct, id: string, props: AppProperties) {
+  constructor(scope: Construct, id: string, props: AppProperties<z.infer<typeof BuildParamsSchema>>) {
     super(scope, id);
 
     const region = cdk.Stack.of(this).region;
@@ -42,8 +47,7 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
       PORT: '8080',
     });
 
-    if (!props.buildParams?.command) throw new Error("command is requires in buildParams")
-    fs.writeFileSync(path.join(props.output, 'run.sh'), props.buildParams.command)
+    fs.writeFileSync(path.join(props.output, 'run.sh'), props.buildParams.cmd)
 
     this.function = new lambda.Function(this, `AppFunction`, {
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -107,5 +111,9 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
 
   api(path: string) {
     return lambdaApi(this.function, path)
+  }
+
+  static parse(params: unknown) {
+    return BuildParamsSchema.parse(params)
   }
 }

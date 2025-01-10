@@ -1,6 +1,7 @@
 import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
+import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { BehaviorOptions } from 'aws-cdk-lib/aws-cloudfront';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { LoggingFormat } from 'aws-cdk-lib/aws-lambda';
@@ -9,17 +10,21 @@ import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
 import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
+import { z } from 'zod';
 
 import { AppConstruct, AppProperties } from './types';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
-import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+
+const BuildParamsSchema = z.object({
+  handler: z.string().optional(),
+})
 
 export class NodeAppConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
 
-  constructor(scope: Construct, id: string, props: AppProperties) {
+  constructor(scope: Construct, id: string, props: AppProperties<z.infer<typeof BuildParamsSchema>>) {
     super(scope, id);
 
     const environment = {};
@@ -29,7 +34,7 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
     this.function = new lambda.Function(this, `AppFunction`, {
       runtime: lambda.Runtime.NODEJS_20_X,
       memorySize: 512,
-      handler: props.buildParams?.handler ?? "index.handler",
+      handler: props.buildParams.handler ?? "index.handler",
       timeout: cdk.Duration.seconds(30),
       code: lambda.Code.fromAsset(props.output),
       loggingFormat: LoggingFormat.JSON,
@@ -59,7 +64,7 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
 
   subscription(props: SubscriptionProps): ITopicSubscription {
     if (this.queue)
-      return new snsSubscriptions.SqsSubscription(this.queue, props);
+      return new snsSubscriptions.SqsSubscription(this.queue, { ...props, rawMessageDelivery: true });
 
     return new snsSubscriptions.LambdaSubscription(this.function, props);
   }
@@ -81,5 +86,9 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
     );
 
     return { [`${path}/*`]: integration };
+  }
+
+  static parse(params: unknown) {
+    return BuildParamsSchema.parse(params)
   }
 }

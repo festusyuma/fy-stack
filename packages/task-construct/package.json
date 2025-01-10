@@ -1,7 +1,6 @@
 {
-  "name": "@fy-stack/apigateway-construct",
+  "name": "@fy-stack/task-construct",
   "version": "0.0.130",
-  "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
     "@fy-stack/types": "0.0.130",
     "tslib": "^2.3.0"
@@ -18,6 +17,6 @@
     "!**/*.tsbuildinfo"
   ],
   "nx": {
-    "name": "apigateway-construct"
+    "name": "task-construct"
   }
 }

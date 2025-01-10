@@ -1,18 +1,22 @@
-import { AppConstruct, AppProperties } from './types';
-import { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import { Attachable, Grantable } from '@fy-stack/types';
-import { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
+import * as cdk from 'aws-cdk-lib';
+import { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
+import { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
-import * as cdk from 'aws-cdk-lib';
+import { z } from 'zod';
+
+import { AppConstruct, AppProperties } from './types';
+
+const BuildParamsSchema = z.object({}).optional();
 
 export class StaticWebsiteConstruct extends Construct implements AppConstruct {
   private readonly static: s3.Bucket;
 
-  constructor(scope: Construct, id: string, props: AppProperties) {
+  constructor(scope: Construct, id: string, props: AppProperties<z.infer<typeof BuildParamsSchema>>) {
     super(scope, id);
 
     this.static = new s3.Bucket(this, `StaticBucket`, {
@@ -75,5 +79,9 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
 
   subscription(): ITopicSubscription {
     throw new Error(`subscription not supported for ${this}`);
+  }
+
+  static parse(params: unknown) {
+    return BuildParamsSchema.parse(params);
   }
 }

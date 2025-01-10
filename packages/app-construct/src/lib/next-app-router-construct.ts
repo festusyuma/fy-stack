@@ -13,10 +13,15 @@ import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
+import { z } from 'zod';
 
 import { AppConstruct, AppProperties } from './types';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
+
+const BuildParamsSchema = z.object({
+  cmd: z.string(),
+})
 
 export class NextAppRouterConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
@@ -24,7 +29,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
 
   private readonly static: s3.Bucket;
 
-  constructor(scope: Construct, id: string, props: AppProperties) {
+  constructor(scope: Construct, id: string, props: AppProperties<z.infer<typeof BuildParamsSchema>>) {
     super(scope, id);
 
     const region = cdk.Stack.of(this).region;
@@ -74,8 +79,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     Object.assign(environment, props.env);
 
     const serverOutput = path.join(props.output, "/.next/standalone")
-    if (!props.buildParams?.command) throw new Error("command is requires in buildParams")
-    fs.writeFileSync(path.join(serverOutput, 'run.sh'), props.buildParams.command)
+    fs.writeFileSync(path.join(serverOutput, 'run.sh'), props.buildParams.cmd)
 
     this.function = new lambda.Function(this, `AppFunction`, {
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -158,5 +162,9 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
 
   subscription(): ITopicSubscription {
     throw new Error(`subscription not supported for ${this}`);
+  }
+
+  static parse(params: unknown) {
+    return BuildParamsSchema.parse(params)
   }
 }

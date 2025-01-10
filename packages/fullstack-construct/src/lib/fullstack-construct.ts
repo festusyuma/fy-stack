@@ -14,7 +14,10 @@ import { DatabaseConstruct } from '@fy-stack/database-construct';
 import { EventConstruct } from '@fy-stack/event-construct';
 import { SecretsConstruct } from '@fy-stack/secret-construct';
 import { StorageConstruct } from '@fy-stack/storage-construct';
+import { TaskConstruct } from '@fy-stack/task-construct';
+import { CfnOutput } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { Construct } from 'constructs';
 
 import { AppType, FullStackConstructProps } from './types';
@@ -32,12 +35,14 @@ const AppBuilds = {
  *
  */
 export class FullStackConstruct extends Construct {
+  public vpc: ec2.IVpc;
   public auth?: AuthConstruct;
   public storage?: StorageConstruct;
   public storagePolicy?: string;
   public database?: DatabaseConstruct;
   public event?: EventConstruct;
   public apps?: Record<string, AppConstruct>;
+  public tasks?: Record<string, TaskConstruct>;
   public cdn?: CDNConstruct;
   public api?: ApiGatewayConstruct;
   public secret: SecretsConstruct;
@@ -45,7 +50,7 @@ export class FullStackConstruct extends Construct {
   constructor(scope: Construct, id: string, props: FullStackConstructProps) {
     super(scope, id);
 
-    const vpc = ec2.Vpc.fromLookup(
+    this.vpc = ec2.Vpc.fromLookup(
       this,
       'VPC',
       props.vpcId ? { vpcId: props.vpcId } : { isDefault: true }
@@ -69,7 +74,7 @@ export class FullStackConstruct extends Construct {
     if (props.database) {
       this.database = new DatabaseConstruct(this, 'DatabaseConstruct', {
         ...props.database,
-        vpcId: vpc.vpcId,
+        vpcId: this.vpc.vpcId,
       });
     }
 
@@ -85,9 +90,10 @@ export class FullStackConstruct extends Construct {
             return [
               key,
               new AppTypeConstruct(this, `${key}App`, {
-                queue: app.attachment?.queue,
-                output: app.output,
-                buildParams: app.buildParams,
+                // @ts-expect-error invalid params
+                buildParams: AppTypeConstruct.parse(app.buildParams ?? {}),
+                vpc: this.vpc,
+                ...app
               }),
             ];
           })
@@ -97,9 +103,32 @@ export class FullStackConstruct extends Construct {
       this.apps = apps;
     }
 
+    if (props.task) {
+      const tasks: Record<string, TaskConstruct> = {};
+      const cluster = new ecs.Cluster(this, 'AppCluster', { vpc: this.vpc })
+
+      Object.assign(
+        tasks,
+        Object.fromEntries(
+          Object.entries(props.task).map(([key, task]) => {
+            return [
+              key,
+              new TaskConstruct(this, `${key}Task`, {
+                clusterArn: cluster.clusterArn,
+                vpc: this.vpc,
+                ...task
+              }),
+            ];
+          })
+        )
+      );
+
+      this.tasks = tasks;
+    }
+
     if (props.events) {
       this.event = new EventConstruct(this, 'EventConstruct', {
-        resources: this.apps,
+        resources: { ...this.apps, ...this.tasks },
         events: props.events,
       });
     }
@@ -120,6 +149,11 @@ export class FullStackConstruct extends Construct {
         domains: props.cdn.domains,
         resources: { ...this.apps, uploads: this.storage },
       });
+
+      new CfnOutput(this, 'CDN Url', {
+        key: 'cdnURl',
+        value: 'https://' + this.cdn.distribution.domainName,
+      });
     }
 
     if (props.api) {
@@ -127,6 +161,13 @@ export class FullStackConstruct extends Construct {
         routes: props.api.routes,
         resources: this.apps,
       });
+
+      if (this.api.api.url) {
+        new CfnOutput(this, 'Api Url', {
+          key: 'apiUrl',
+          value: this.api.api.url,
+        });
+      }
     }
 
     const resources = {
@@ -140,7 +181,14 @@ export class FullStackConstruct extends Construct {
     type ResourceKey = keyof typeof resources;
 
     if (this.storage && this.cdn) {
-      this.storagePolicy = JSON.stringify(this.storage.cloudfrontPolicy(this.cdn.distribution.distributionId))
+      this.storagePolicy = JSON.stringify(
+        this.storage.cloudfrontPolicy(this.cdn.distribution.distributionId)
+      );
+
+      new CfnOutput(this, 'StorageBucketCDNPolicy', {
+        key: 'storageBucketCDNPolicy',
+        value: this.storagePolicy
+      });
     }
 
     for (const i in props.apps) {
@@ -159,6 +207,25 @@ export class FullStackConstruct extends Construct {
 
       if (grants.length) {
         this.apps?.[i]?.grant(...grants);
+      }
+    }
+
+    for (const i in props.task) {
+      const attachments = Object.entries(props.task[i]?.attachment ?? {})
+        .map(([key]) => [key, resources[key as ResourceKey]])
+        .filter((v) => !!v);
+
+      if (attachments.length) {
+        this.tasks?.[i]?.attach(Object.fromEntries(attachments));
+      }
+
+      const grants =
+        props.task[i]?.grant
+          ?.map((val) => resources[val as ResourceKey])
+          .filter((v) => !!v) ?? [];
+
+      if (grants.length) {
+        this.tasks?.[i]?.grant(...grants);
       }
     }
   }
