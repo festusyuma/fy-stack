@@ -40,7 +40,7 @@ export class TaskConstruct extends Construct implements EventResource, Grant, At
     });
 
     if (defaultImage) {
-      const { image: containerProps, ...imageProps } = defaultImage
+      const { container: containerProps, ...imageProps } = defaultImage
 
       this.taskDefinition.addContainer("DefaultImage", {
         image: ecs.ContainerImage.fromAsset(output, {

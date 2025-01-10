@@ -6,5 +6,5 @@ export type TaskConstructsProps = FargateTaskDefinitionProps & {
   clusterArn: string;
   env?: Record<string, string>;
   output: string;
-  defaultImage?: Omit<ContainerDefinitionOptions, "image" | "logging"> & { image: AssetImageProps }
+  defaultImage?: Omit<ContainerDefinitionOptions, "image" | "logging"> & { container: AssetImageProps }
 }

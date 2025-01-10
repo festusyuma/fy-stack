@@ -90,12 +90,10 @@ export class FullStackConstruct extends Construct {
             return [
               key,
               new AppTypeConstruct(this, `${key}App`, {
-                queue: app.attachment?.queue,
-                output: app.output,
                 // @ts-expect-error invalid params
                 buildParams: AppTypeConstruct.parse(app.buildParams ?? {}),
-                env: app.env,
                 vpc: this.vpc,
+                ...app
               }),
             ];
           })
@@ -116,10 +114,9 @@ export class FullStackConstruct extends Construct {
             return [
               key,
               new TaskConstruct(this, `${key}Task`, {
-                output: task.output,
-                env: task.env,
                 clusterArn: cluster.clusterArn,
                 vpc: this.vpc,
+                ...task
               }),
             ];
           })
