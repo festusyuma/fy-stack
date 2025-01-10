@@ -84,7 +84,7 @@ export class ImageAppConstruct
 
   subscription(props: SubscriptionProps): ITopicSubscription {
     if (this.queue) {
-      return new SqsSubscription(this.queue, props);
+      return new SqsSubscription(this.queue, { ...props, rawMessageDelivery: true });
     }
 
     return new LambdaSubscription(this.function, props);

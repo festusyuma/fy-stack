@@ -64,7 +64,7 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
 
   subscription(props: SubscriptionProps): ITopicSubscription {
     if (this.queue)
-      return new snsSubscriptions.SqsSubscription(this.queue, props);
+      return new snsSubscriptions.SqsSubscription(this.queue, { ...props, rawMessageDelivery: true });
 
     return new snsSubscriptions.LambdaSubscription(this.function, props);
   }
