@@ -3,15 +3,16 @@
   "files": [],
   "include": [],
   "references": [
-    { "path": "../app-construct" },
-    { "path": "../apigateway-construct" },
-    { "path": "../cdn-construct" },
+    { "path": "../task-construct" },
+    { "path": "../storage-construct" },
     { "path": "../secret-construct" },
     { "path": "../event-construct" },
     { "path": "../database-construct" },
-    { "path": "../storage-construct" },
-    { "path": "../types" },
+    { "path": "../cdn-construct" },
     { "path": "../auth-construct" },
+    { "path": "../app-construct" },
+    { "path": "../types" },
+    { "path": "../apigateway-construct" },
     { "path": "./tsconfig.lib.json" }
   ]
 }

@@ -10,14 +10,15 @@
   },
   "include": ["src/**/*.ts"],
   "references": [
-    { "path": "../app-construct/tsconfig.lib.json" },
-    { "path": "../apigateway-construct/tsconfig.lib.json" },
-    { "path": "../cdn-construct/tsconfig.lib.json" },
+    { "path": "../task-construct/tsconfig.lib.json" },
+    { "path": "../storage-construct/tsconfig.lib.json" },
     { "path": "../secret-construct/tsconfig.lib.json" },
     { "path": "../event-construct/tsconfig.lib.json" },
     { "path": "../database-construct/tsconfig.lib.json" },
-    { "path": "../storage-construct/tsconfig.lib.json" },
+    { "path": "../cdn-construct/tsconfig.lib.json" },
+    { "path": "../auth-construct/tsconfig.lib.json" },
+    { "path": "../app-construct/tsconfig.lib.json" },
     { "path": "../types/tsconfig.lib.json" },
-    { "path": "../auth-construct/tsconfig.lib.json" }
+    { "path": "../apigateway-construct/tsconfig.lib.json" }
   ]
 }

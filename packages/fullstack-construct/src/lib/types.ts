@@ -1,5 +1,6 @@
 import { CDNConstructProps } from '@fy-stack/cdn-construct';
 import { DatabaseConstructProps } from '@fy-stack/database-construct';
+import { TaskConstructsProps } from '@fy-stack/task-construct';
 import { ResourceRef } from '@fy-stack/types';
 import * as events from 'aws-cdk-lib/aws-events';
 
@@ -37,6 +38,11 @@ export type App = {
   buildParams?: Record<string, unknown>;
 };
 
+export type Task = Omit<TaskConstructsProps, "clusterArn" | "vpc"> & {
+  attachment?: AppAttachment;
+  grant?: AppGrant[];
+}
+
 export type AppMessage = ResourceRef & {
   messages: string[];
 };
@@ -60,4 +66,5 @@ export type FullStackConstructProps = {
   cdn?: Omit<CDNConstructProps, "resources">;
   api?: { routes: Record<string, ResourceRef> };
   secrets?: Record<string, string | undefined>;
+  task?: Record<string, Task>;
 };

@@ -14,8 +14,10 @@ import { DatabaseConstruct } from '@fy-stack/database-construct';
 import { EventConstruct } from '@fy-stack/event-construct';
 import { SecretsConstruct } from '@fy-stack/secret-construct';
 import { StorageConstruct } from '@fy-stack/storage-construct';
+import { TaskConstruct } from '@fy-stack/task-construct';
 import { CfnOutput } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { Construct } from 'constructs';
 
 import { AppType, FullStackConstructProps } from './types';
@@ -40,6 +42,7 @@ export class FullStackConstruct extends Construct {
   public database?: DatabaseConstruct;
   public event?: EventConstruct;
   public apps?: Record<string, AppConstruct>;
+  public tasks?: Record<string, TaskConstruct>;
   public cdn?: CDNConstruct;
   public api?: ApiGatewayConstruct;
   public secret: SecretsConstruct;
@@ -102,9 +105,33 @@ export class FullStackConstruct extends Construct {
       this.apps = apps;
     }
 
+    if (props.task) {
+      const tasks: Record<string, TaskConstruct> = {};
+      const cluster = new ecs.Cluster(this, 'AppCluster', { vpc: this.vpc })
+
+      Object.assign(
+        tasks,
+        Object.fromEntries(
+          Object.entries(props.task).map(([key, task]) => {
+            return [
+              key,
+              new TaskConstruct(this, `${key}Task`, {
+                output: task.output,
+                env: task.env,
+                clusterArn: cluster.clusterArn,
+                vpc: this.vpc,
+              }),
+            ];
+          })
+        )
+      );
+
+      this.tasks = tasks;
+    }
+
     if (props.events) {
       this.event = new EventConstruct(this, 'EventConstruct', {
-        resources: this.apps,
+        resources: { ...this.apps, ...this.tasks },
         events: props.events,
       });
     }
@@ -183,6 +210,25 @@ export class FullStackConstruct extends Construct {
 
       if (grants.length) {
         this.apps?.[i]?.grant(...grants);
+      }
+    }
+
+    for (const i in props.task) {
+      const attachments = Object.entries(props.task[i]?.attachment ?? {})
+        .map(([key]) => [key, resources[key as ResourceKey]])
+        .filter((v) => !!v);
+
+      if (attachments.length) {
+        this.tasks?.[i]?.attach(Object.fromEntries(attachments));
+      }
+
+      const grants =
+        props.task[i]?.grant
+          ?.map((val) => resources[val as ResourceKey])
+          .filter((v) => !!v) ?? [];
+
+      if (grants.length) {
+        this.tasks?.[i]?.grant(...grants);
       }
     }
   }
