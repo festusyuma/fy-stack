@@ -129,7 +129,7 @@ export class FullStackConstruct extends Construct {
     if (props.events) {
       this.event = new EventConstruct(this, 'EventConstruct', {
         resources: { ...this.apps, ...this.tasks },
-        events: props.events,
+        ...props.events,
       });
     }
 

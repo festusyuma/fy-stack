@@ -22,8 +22,8 @@ export class EventConstruct extends Construct implements Attachable, Grantable {
 
     this.topic = new sns.Topic(this, 'AppTopic');
 
-    for (const i in props.events?.messages ?? []) {
-      const appMessage = props.events?.messages?.[i];
+    for (const i in props?.messages ?? []) {
+      const appMessage = props?.messages?.[i];
       if (!appMessage) continue;
 
       const app = props.resources?.[appMessage.$resource];
@@ -42,21 +42,39 @@ export class EventConstruct extends Construct implements Attachable, Grantable {
       this.topic.addSubscription(app.subscription(filterPolicy))
     }
 
-    for (const i in props.events?.cron ?? []) {
-      const job = props.events?.cron?.[i];
+    for (const i in props?.schedule ?? []) {
+      const job = props.schedule?.[i];
       if (!job) continue;
 
       for (const message of job.messages) {
-        new events.Rule(this, `ScheduleRule${i}${message}`, {
-          schedule: events.Schedule.cron(job.cron),
-          targets: [
-            new eventsTarget.SnsTopic(this.topic, {
-              message: events.RuleTargetInput.fromObject({
-                message,
-              }),
+        const targets = [
+          new eventsTarget.SnsTopic(this.topic, {
+            message: events.RuleTargetInput.fromObject({
+              message,
             }),
-          ],
-        });
+          }),
+        ];
+
+        if (job.cron) {
+          new events.Rule(this, `ScheduleRuleCron${i}${message}`, {
+            schedule: events.Schedule.cron(job.cron),
+            targets,
+          });
+        }
+
+        if (job.expression) {
+          new events.Rule(this, `ScheduleRuleExpression${i}${message}`, {
+            schedule: events.Schedule.expression(job.expression),
+            targets,
+          });
+        }
+
+        if (job.rate) {
+          new events.Rule(this, `ScheduleRuleRate${i}${message}`, {
+            schedule: events.Schedule.rate(job.rate),
+            targets,
+          });
+        }
       }
     }
   }
