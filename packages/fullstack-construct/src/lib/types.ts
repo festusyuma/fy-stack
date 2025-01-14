@@ -1,8 +1,8 @@
-import { CDNConstructProps } from '@fy-stack/cdn-construct';
-import { DatabaseConstructProps } from '@fy-stack/database-construct';
-import { TaskConstructsProps } from '@fy-stack/task-construct';
-import { ResourceRef } from '@fy-stack/types';
-import * as events from 'aws-cdk-lib/aws-events';
+import type { CDNConstructProps } from '@fy-stack/cdn-construct';
+import type { DatabaseConstructProps } from '@fy-stack/database-construct';
+import type { EventConstructProps } from '@fy-stack/event-construct';
+import type { TaskConstructsProps } from '@fy-stack/task-construct';
+import type { ResourceRef } from '@fy-stack/types';
 
 export enum AppType {
   NODE_APP = 'nodeApp',
@@ -47,11 +47,6 @@ export type AppMessage = ResourceRef & {
   messages: string[];
 };
 
-export type AppCron = {
-  messages: string[];
-  cron: events.CronOptions;
-};
-
 export type FullStackConstructProps = {
   vpcId?: string,
   appId: string;
@@ -59,10 +54,7 @@ export type FullStackConstructProps = {
   storage?: { retainOnDelete?: boolean };
   database?: DatabaseConstructProps;
   apps?: Record<string, App>;
-  events?: {
-    messages?: AppMessage[];
-    cron?: AppCron[];
-  };
+  events?: Omit<EventConstructProps, "resources">;
   cdn?: Omit<CDNConstructProps, "resources">;
   api?: { routes: Record<string, ResourceRef> };
   secrets?: Record<string, string | undefined>;

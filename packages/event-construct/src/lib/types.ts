@@ -6,14 +6,17 @@ import {
 } from 'aws-cdk-lib/aws-appsync';
 import { UserPool } from 'aws-cdk-lib/aws-cognito';
 import type { CronOptions } from 'aws-cdk-lib/aws-events';
+import type { Duration } from 'aws-cdk-lib/core';
 
 export type AppMessage = ResourceRef & {
   messages: string[];
 };
 
-export type AppCron = {
+export type AppSchedule = {
   messages: string[];
-  cron: CronOptions;
+  cron?: CronOptions;
+  expression?: string;
+  rate?: Duration;
 };
 
 export interface EventConstructProps {
@@ -23,18 +26,13 @@ export interface EventConstructProps {
    */
   resources?: Record<string, EventResource>;
   /**
-   * Represents events associated with the construct.
-   */
-  events?: {
-    /**
-     * List of resource to messages mapping
-     * */
-    messages?: AppMessage[];
-    /**
-     * List of cron objects
-     * */
-    cron?: AppCron[];
-  };
+   * List of resource to messages mapping
+   * */
+  messages?: AppMessage[];
+  /**
+   * List of cron objects
+   * */
+  schedule?: AppSchedule[];
 }
 
 export enum AuthProviderCapability {

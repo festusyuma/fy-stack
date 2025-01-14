@@ -1,7 +1,7 @@
 export { EventConstruct } from './lib/event-construct';
 export type {
-  AppCron,
   AppMessage,
+  AppSchedule,
   EventConstructProps,
   WebsocketConstructProps,
 } from './lib/types';
