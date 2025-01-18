@@ -1,0 +1,24 @@
+{
+  "name": "@fy-stack/cli",
+  "version": "0.0.131",
+  "dependencies": {
+    "@aws-sdk/client-iam": "^3.731.1",
+    "@aws-sdk/client-sts": "^3.731.1",
+    "@inquirer/prompts": "^7.2.3",
+    "commander": "^13.0.0",
+    "tslib": "^2.3.0"
+  },
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "nx": {
+    "name": "cli"
+  },
+  "bin": {
+    "fy-stack": "./dist/index.js"
+  }
+}

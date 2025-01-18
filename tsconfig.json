@@ -35,6 +35,9 @@
     },
     {
       "path": "./packages/task-construct"
+    },
+    {
+      "path": "./packages/cli"
     }
   ]
 }
