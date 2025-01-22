@@ -85,7 +85,7 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
       this.function
     );
 
-    return { [`${path}/*`]: integration };
+    return { [`${path}/{proxy+}`]: integration };
   }
 
   static parse(params: unknown) {

@@ -141,6 +141,10 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       },
       [`${path}/_next/*`]: staticBehavior,
       [`${path}/*.ico`]: staticBehavior,
+      [`${path}/*.png`]: staticBehavior,
+      [`${path}/*.svg`]: staticBehavior,
+      [`${path}/*.jpg`]: staticBehavior,
+      [`${path}/*.jpeg`]: staticBehavior,
     };
   }
 

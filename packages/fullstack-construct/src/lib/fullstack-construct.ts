@@ -147,7 +147,7 @@ export class FullStackConstruct extends Construct {
       this.cdn = new CDNConstruct(this, 'CDNConstruct', {
         routes: props.cdn.routes,
         domains: props.cdn.domains,
-        resources: { ...this.apps, uploads: this.storage },
+        resources: { ...this.apps, storage: this.storage },
       });
 
       new CfnOutput(this, 'CDN Url', {

@@ -57,7 +57,7 @@ export class ApiGatewayConstruct extends Construct {
       this.api.addRoutes({
         integration: additionalIntegrations[i],
         methods: [HttpMethod.ANY],
-        path: `${i}/{proxy+}`,
+        path: i,
       });
     }
   }
