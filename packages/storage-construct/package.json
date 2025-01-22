@@ -1,9 +1,9 @@
 {
   "name": "@fy-stack/storage-construct",
-  "version": "0.0.131",
+  "version": "0.0.132",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "@fy-stack/types": "0.0.131",
+    "@fy-stack/types": "0.0.132",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
