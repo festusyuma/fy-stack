@@ -102,7 +102,7 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
           .CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
     };
 
-    return { [`${path}/*`]: apiBehavior };
+    return { [`${path}/{proxy+}`]: apiBehavior };
   }
 
   cloudfrontPolicy(distributionId: string) {
