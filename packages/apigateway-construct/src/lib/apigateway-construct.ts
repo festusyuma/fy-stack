@@ -35,7 +35,7 @@ export class ApiGatewayConstruct extends Construct {
     const { "/*": base, ...otherRoutes } = routes;
     if (!base) throw new Error("no base route");
 
-    const { "/*": defaultIntegration, ...additionalIntegrations } = base
+    const { "/{proxy+}": defaultIntegration, ...additionalIntegrations } = base
       .api("");
 
     if (!defaultIntegration) throw new Error("no default integration");
