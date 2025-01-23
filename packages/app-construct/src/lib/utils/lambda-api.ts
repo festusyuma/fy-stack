@@ -14,5 +14,8 @@ export function lambdaApi(func: Function, path: string) {
     apiUrl.url
   );
 
-  return { [`${path}/{proxy+}`]: integration };
+  return {
+    [path]: integration,
+    [`${path}/{proxy+}`]: integration,
+  };
 }
