@@ -1,9 +1,9 @@
 {
   "name": "@fy-stack/cdn-construct",
-  "version": "0.0.133",
+  "version": "0.0.137",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "@fy-stack/types": "0.0.133",
+    "@fy-stack/types": "0.0.137",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
