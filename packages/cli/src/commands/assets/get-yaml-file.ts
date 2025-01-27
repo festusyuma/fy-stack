@@ -20,9 +20,7 @@ permissions:
 
 jobs:
   deploy:
-    environment: \${{ (github.ref_name == 'main' && 'production') }}
     env:
-      STACK_NAME: \${{ format('${props.app}-{0}', (github.head_ref || github.ref_name)) }}
       ENVIRONMENT: \${{ (github.ref_name == 'main' && 'production') || github.ref_name }}
 
     runs-on: ubuntu-latest
