@@ -11,7 +11,7 @@ export function lambdaApi(func: Function, path: string) {
 
   const integration = new HttpUrlIntegration(
     'AppIntegration',
-    apiUrl.url
+    apiUrl.url + '{proxy}'
   );
 
   return {

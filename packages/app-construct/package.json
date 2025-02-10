@@ -1,9 +1,9 @@
 {
   "name": "@fy-stack/app-construct",
-  "version": "0.0.138",
+  "version": "0.0.139",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "@fy-stack/types": "0.0.138",
+    "@fy-stack/types": "0.0.139",
     "tslib": "^2.3.0",
     "zod": "^3.24.1"
   },
