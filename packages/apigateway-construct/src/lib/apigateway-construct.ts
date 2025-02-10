@@ -45,7 +45,6 @@ export class ApiGatewayConstruct extends Construct {
     }
 
     this.api = new HttpApi(this, "Api", {
-      defaultIntegration,
       corsPreflight: {
         allowHeaders: ["*"],
         allowOrigins: ["*"],
