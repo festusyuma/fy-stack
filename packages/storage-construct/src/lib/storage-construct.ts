@@ -4,6 +4,7 @@ import { Stack } from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as dynamo from 'aws-cdk-lib/aws-dynamodb';
 import { Construct } from 'constructs';
 
 import { StorageCdnStack } from './storage-cdn-stack';
@@ -18,12 +19,25 @@ export class StorageConstruct
   implements Attachable, Grantable, CDNResource
 {
   public bucket: s3.IBucket;
+  public table: dynamo.Table | undefined;
 
   constructor(scope: Construct, id: string, props: StorageConstructProps) {
     super(scope, id);
 
     const bucketProps: s3.BucketProps = {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      cors: [
+        {
+          allowedOrigins: ['*'],
+          allowedMethods: [
+            s3.HttpMethods.GET,
+            s3.HttpMethods.PUT,
+            s3.HttpMethods.DELETE,
+          ],
+          allowedHeaders: ["*"],
+          exposedHeaders: ["ETag"]
+        },
+      ],
     };
 
     Object.assign(
@@ -34,6 +48,15 @@ export class StorageConstruct
     );
 
     this.bucket = new s3.Bucket(this, 'Bucket', bucketProps);
+
+    if (props.logTable) {
+      this.table = new dynamo.Table(this, 'LogTable', {
+        partitionKey: {
+          name: 'key',
+          type: dynamo.AttributeType.STRING,
+        },
+      });
+    }
   }
 
   cloudfront(path: string) {
@@ -70,13 +93,14 @@ export class StorageConstruct
             distributionId,
         },
       },
-    }).toStatementJson()
+    }).toStatementJson();
   }
 
   attachable() {
     return {
       name: this.bucket.bucketName,
       arn: this.bucket.bucketArn,
+      logTable: this.table?.tableName ?? '',
     };
   }
 
@@ -88,5 +112,7 @@ export class StorageConstruct
         resources: [`${this.bucket.bucketArn}/*`],
       })
     );
+
+    if (this.table) this.table.grantFullAccess(grant);
   }
 }
