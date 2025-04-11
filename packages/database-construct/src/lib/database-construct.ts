@@ -21,31 +21,40 @@ export class DatabaseConstruct
   public secrets: secretsManager.ISecret;
   public db: rds.DatabaseInstance;
 
-  constructor(scope: Construct, id: string, props: DatabaseConstructProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    {
+      vpcId,
+      engine,
+      instance,
+      public: publicDb,
+      ...props
+    }: DatabaseConstructProps
+  ) {
     super(scope, id);
 
     const vpc = ec2.Vpc.fromLookup(
       this,
       'VPC',
-      props?.vpcId ? { vpcId: props.vpcId } : { isDefault: true }
+      vpcId ? { vpcId } : { isDefault: true }
     );
 
     this.db = new rds.DatabaseInstance(this, 'DB', {
       vpc,
-      engine: props?.engine ?? DatabaseInstanceEngine.POSTGRES,
+      engine: engine ?? DatabaseInstanceEngine.POSTGRES,
       instanceType: ec2.InstanceType.of(
-        props?.instance?.class ?? ec2.InstanceClass.T4G,
-        props?.instance?.size ?? ec2.InstanceSize.MICRO
+        instance?.class ?? ec2.InstanceClass.T4G,
+        instance?.size ?? ec2.InstanceSize.MICRO
       ),
-      publiclyAccessible: props?.public,
+      publiclyAccessible: publicDb,
       vpcSubnets: {
-        subnetType: props?.public
+        subnetType: publicDb
           ? ec2.SubnetType.PUBLIC
           : ec2.SubnetType.PRIVATE_ISOLATED,
       },
+      ...props,
     });
-
-    this.db.addRotationSingleUser()
 
     if (!this.db.secret)
       throw new Error('Could not create database credentials secret');

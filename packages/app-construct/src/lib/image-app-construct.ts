@@ -12,12 +12,12 @@ import {
 import { FunctionUrlOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import {
+  AssetImageCodeProps,
   Code,
   Function,
   FunctionUrlAuthType,
   Handler,
   Runtime,
-  AssetImageCodeProps,
 } from 'aws-cdk-lib/aws-lambda';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';

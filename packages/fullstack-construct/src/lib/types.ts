@@ -1,9 +1,9 @@
 import type { CDNConstructProps } from '@fy-stack/cdn-construct';
 import type { DatabaseConstructProps } from '@fy-stack/database-construct';
 import type { EventConstructProps } from '@fy-stack/event-construct';
+import type { StorageConstructProps } from '@fy-stack/storage-construct';
 import type { TaskConstructsProps } from '@fy-stack/task-construct';
 import type { ResourceRef } from '@fy-stack/types';
-import type { StorageConstructProps } from '@fy-stack/storage-construct';
 
 export enum AppType {
   NODE_APP = 'nodeApp',
