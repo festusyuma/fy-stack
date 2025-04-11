@@ -6,6 +6,7 @@ import { Queue } from 'aws-cdk-lib/aws-sqs';
 export type AppProperties<BuildParams = Record<string, unknown>> = {
   queue?: { batchSize?: number };
   env?: Record<string, string>;
+  timeout?: number;
   buildParams: BuildParams;
   output: string;
   vpc?: IVpc

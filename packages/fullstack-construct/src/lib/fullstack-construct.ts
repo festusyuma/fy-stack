@@ -57,7 +57,7 @@ export class FullStackConstruct extends Construct {
     );
 
     if (props.auth) {
-      this.auth = new AuthConstruct(this, props.appId + 'AuthConstruct', {
+      this.auth = new AuthConstruct(this, 'AuthConstruct', {
         groups: props.auth.groups,
       });
     }

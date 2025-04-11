@@ -1,4 +1,4 @@
-import {  Attachable, Grantable } from '@fy-stack/types';
+import { Attachable, Grantable } from '@fy-stack/types';
 import { Duration } from 'aws-cdk-lib';
 import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import {
@@ -17,6 +17,7 @@ import {
   FunctionUrlAuthType,
   Handler,
   Runtime,
+  AssetImageCodeProps,
 } from 'aws-cdk-lib/aws-lambda';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
@@ -29,41 +30,48 @@ import { Construct } from 'constructs';
 import { z } from 'zod';
 
 import { AppConstruct, AppProperties } from './types';
+import { getDefaultLambda } from './utils/getDefaultLambda';
 import { lambdaApi } from './utils/lambda-api';
 import { lambdaAttach } from './utils/lambda-attach';
 import { lambdaGrant } from './utils/lambda-grant';
 
-const BuildParamsSchema = z.object({
-  file: z.string().optional(),
-  cmd: z.string().array().optional(),
-})
+const BuildParamsSchema = z
+  .object({
+    container: z
+      .object({
+        file: z.string().optional(),
+        cmd: z.string().array().optional(),
+      })
+      .passthrough(),
+  })
+  .passthrough();
 
-export class ImageAppConstruct
-  extends Construct
-  implements AppConstruct
-{
+export class ImageAppConstruct extends Construct implements AppConstruct {
   public function: Function;
   public queue: Queue | undefined;
 
-  constructor(scope: Construct, id: string, props: AppProperties<z.infer<typeof BuildParamsSchema>>) {
+  constructor(
+    scope: Construct,
+    id: string,
+    props: AppProperties<
+      z.infer<typeof BuildParamsSchema> & AssetImageCodeProps
+    >
+  ) {
     super(scope, id);
 
     this.function = new Function(this, `AppFunction`, {
-      memorySize: 512,
-      timeout: Duration.seconds(30),
+      ...getDefaultLambda(props),
       code: Code.fromAssetImage(props.output, {
-        file: props.buildParams.file,
         platform: Platform.LINUX_AMD64,
-        cmd: props.buildParams.cmd,
+        ...props.buildParams.container,
       }),
-      environment: props.env,
       handler: Handler.FROM_IMAGE,
       runtime: Runtime.FROM_IMAGE,
     });
 
     if (props.queue) {
       this.queue = new Queue(this, 'AppQueue', {
-        visibilityTimeout: Duration.seconds(59),
+        visibilityTimeout: Duration.seconds((props.timeout ?? 30) + 30),
       });
 
       this.function.addEventSource(
@@ -84,7 +92,10 @@ export class ImageAppConstruct
 
   subscription(props: SubscriptionProps): ITopicSubscription {
     if (this.queue) {
-      return new SqsSubscription(this.queue, { ...props, rawMessageDelivery: true });
+      return new SqsSubscription(this.queue, {
+        ...props,
+        rawMessageDelivery: true,
+      });
     }
 
     return new LambdaSubscription(this.function, props);
@@ -105,21 +116,21 @@ export class ImageAppConstruct
       viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
       responseHeadersPolicy:
-      ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
+        ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
     };
 
     return { [`${path}/*`]: apiBehavior };
   }
 
   cloudfrontPolicy(distributionId: string) {
-    throw new Error("cloudfrontPolicy not implemented");
+    throw new Error('cloudfrontPolicy not implemented');
   }
 
   api(path: string): Record<string, HttpRouteIntegration> {
-    return lambdaApi(this.function, path)
+    return lambdaApi(this.function, path);
   }
 
   static parse(params: unknown) {
-    return BuildParamsSchema.parse(params)
+    return BuildParamsSchema.parse(params);
   }
 }

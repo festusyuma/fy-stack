@@ -119,9 +119,11 @@ export async function initApp(props: InitAppProps) {
           new GetUserPolicyCommand({ UserName: username, PolicyName: policyName })
         );
 
+        if (!policyDocument.PolicyDocument) continue;
+
         await iamClient.send(new PutRolePolicyCommand({
           PolicyName: policyName,
-          PolicyDocument: policyDocument.PolicyDocument,
+          PolicyDocument: decodeURIComponent(policyDocument.PolicyDocument),
           RoleName: roleRes.Role.RoleName
         }))
       }
@@ -148,9 +150,10 @@ export async function initApp(props: InitAppProps) {
             new GetUserPolicyCommand({ UserName: username, PolicyName: policyName })
           );
 
+          if (!policyDocument.PolicyDocument) continue;
           await iamClient.send(new PutRolePolicyCommand({
             PolicyName: policyName,
-            PolicyDocument: policyDocument.PolicyDocument,
+            PolicyDocument: decodeURIComponent(policyDocument.PolicyDocument),
             RoleName: roleRes.Role.RoleName
           }))
         }

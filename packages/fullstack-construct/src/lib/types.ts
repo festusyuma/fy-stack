@@ -3,6 +3,7 @@ import type { DatabaseConstructProps } from '@fy-stack/database-construct';
 import type { EventConstructProps } from '@fy-stack/event-construct';
 import type { TaskConstructsProps } from '@fy-stack/task-construct';
 import type { ResourceRef } from '@fy-stack/types';
+import type { StorageConstructProps } from '@fy-stack/storage-construct';
 
 export enum AppType {
   NODE_APP = 'nodeApp',
@@ -51,7 +52,7 @@ export type FullStackConstructProps = {
   vpcId?: string,
   appId: string;
   auth?: { groups?: string[] };
-  storage?: { retainOnDelete?: boolean };
+  storage?: StorageConstructProps;
   database?: DatabaseConstructProps;
   apps?: Record<string, App>;
   events?: Omit<EventConstructProps, "resources">;
