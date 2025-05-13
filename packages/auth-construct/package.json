@@ -1,9 +1,9 @@
 {
   "name": "@fy-stack/auth-construct",
-  "version": "0.0.140",
+  "version": "0.0.141",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "@fy-stack/types": "0.0.140",
+    "@fy-stack/types": "0.0.141",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
