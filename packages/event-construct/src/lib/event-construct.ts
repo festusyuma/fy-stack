@@ -81,7 +81,7 @@ export class EventConstruct extends Construct implements Attachable, Grantable {
 
   attachable() {
     return {
-      topic: this.topic.topicArn,
+      TOPIC: this.topic.topicArn,
     };
   }
 

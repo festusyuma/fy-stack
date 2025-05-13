@@ -94,13 +94,13 @@ export class WebsocketConstruct extends Construct implements Attachable {
 
   attachable(): Record<string, string> {
     const params = {
-      arn: this.socket.attrApiArn,
-      httpDns: this.socket.getAtt('Dns.Http').toString(),
-      realtimeDnS: this.socket.getAtt('Dns.Realtime').toString(),
+      ARN: this.socket.attrApiArn,
+      HTTP_DNS: this.socket.getAtt('Dns.Http').toString(),
+      REALTIME_DNS: this.socket.getAtt('Dns.Realtime').toString(),
     };
 
     if (this.apiKey) {
-      Object.assign(params, { apiKey: this.apiKey?.attrApiKey });
+      Object.assign(params, { API_KEY: this.apiKey?.attrApiKey });
     }
 
     return params;

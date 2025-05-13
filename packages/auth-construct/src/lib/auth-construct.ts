@@ -64,14 +64,14 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
 
   attachable() {
     const params = {
-      arn: this?.userPool.userPoolArn,
-      id: this?.userPool.userPoolId,
-      clientId: this?.client.userPoolClientId,
-      clientSecret: this?.client.userPoolClientSecret.unsafeUnwrap(),
+      ARN: this?.userPool.userPoolArn,
+      ID: this?.userPool.userPoolId,
+      CLIENT_ID: this?.client.userPoolClientId,
+      CLIENT_SECRET: this?.client.userPoolClientSecret.unsafeUnwrap(),
     };
 
     if (this.domain) {
-      Object.assign(params, { domainName: this.domain.domainName, })
+      Object.assign(params, { DOMAIN_NAME: this.domain.domainName, })
     }
 
     return params

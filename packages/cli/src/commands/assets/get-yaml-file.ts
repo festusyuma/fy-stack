@@ -45,5 +45,21 @@ jobs:
         run: npm ci
 
       - name: Deploy Apps
-        run: npx cdk deploy --require-approval never`;
+        run: npx cdk deploy --require-approval never --outputs-file app.json
+        
+      - name: Get App Secrets Name
+        id: get_app_secrets
+        run: |
+          SECRETS=$(jq -r '."${props.app}-\${{ env.ENVIRONMENT }}".appSecrets' app.json)
+          echo "app_secrets=$SECRETS" >> $GITHUB_OUTPUT
+
+      # Load App secrets back into actions to perform tasks like seed
+      # Remove if not needed
+      - name: Fetch App Secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            ,\${{ steps.get_app_secrets.outputs.app_secrets }}
+          name-transformation: none
+          parse-json-secrets: true`;
 }
