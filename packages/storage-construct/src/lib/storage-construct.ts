@@ -2,9 +2,9 @@ import { Attachable, CDNResource, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import { Stack } from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as dynamo from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import * as dynamo from 'aws-cdk-lib/aws-dynamodb';
 import { Construct } from 'constructs';
 
 import { StorageCdnStack } from './storage-cdn-stack';
@@ -98,9 +98,9 @@ export class StorageConstruct
 
   attachable() {
     return {
-      name: this.bucket.bucketName,
-      arn: this.bucket.bucketArn,
-      logTable: this.table?.tableName ?? '',
+      NAME: this.bucket.bucketName,
+      ARN: this.bucket.bucketArn,
+      LOG_TABLE: this.table?.tableName ?? '',
     };
   }
 

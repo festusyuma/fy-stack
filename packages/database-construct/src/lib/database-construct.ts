@@ -76,9 +76,9 @@ export class DatabaseConstruct
 
   attachable() {
     return {
-      arn: this.db.instanceArn,
-      secretsArn: this.secrets.secretArn,
-      secretsName: this.secrets.secretName,
+      ARN: this.db.instanceArn,
+      SECRET_ARN: this.secrets.secretArn,
+      SECRET_NAME: this.secrets.secretName,
     };
   }
 

@@ -24,7 +24,7 @@ export class SecretsConstruct extends Construct implements Attachable, Grantable
       ...Object.entries(props.resources ?? {}).map(([key, val]) => {
         return Object.fromEntries(
           Object.entries(val?.attachable() ?? {}).map(([subKey, subVal]) => [
-            `${key}.${subKey}`,
+            `${key}_${subKey}`.toUpperCase(),
             subVal,
           ])
         );
@@ -47,8 +47,8 @@ export class SecretsConstruct extends Construct implements Attachable, Grantable
 
   attachable() {
     return {
-      arn: this.secrets.secretArn,
-      name: this.secrets.secretName,
+      ARN: this.secrets.secretArn,
+      NAME: this.secrets.secretName,
     };
   }
 

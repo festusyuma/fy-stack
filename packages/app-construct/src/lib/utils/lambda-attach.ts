@@ -9,7 +9,7 @@ export function lambdaAttach(func: Function, attachable: Record<string, Attachab
       .map(([key, val]) => {
         return Object.fromEntries(
           Object.entries(val?.attachable() ?? {})
-            .map(([subKey, subVal]) => [`${key}_${subKey}`, subVal])
+            .map(([subKey, subVal]) => [`${key}_${subKey}`.toUpperCase(), subVal])
         )
       })
   )

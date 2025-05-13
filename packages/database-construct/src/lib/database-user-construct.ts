@@ -30,9 +30,9 @@ export class DatabaseUserConstruct extends Construct implements Attachable {
 
   attachable(): Record<string, string> {
     return {
-      dbName: this.dbName,
-      secretArn: this.secrets.secretArn,
-      secretName: this.secrets.secretName,
+      DB_NAME: this.dbName,
+      SECRET_ARN: this.secrets.secretArn,
+      SECRET_NAME: this.secrets.secretName,
     }
   }
 }
