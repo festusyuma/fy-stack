@@ -7,7 +7,6 @@ import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { LoggingFormat } from 'aws-cdk-lib/aws-lambda';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
@@ -21,7 +20,7 @@ import { lambdaGrant } from './utils/lambda-grant';
 
 const BuildParamsSchema = z.object({
   cmd: z.string(),
-})
+});
 
 export class NextAppRouterConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
@@ -74,6 +73,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
       PORT: '8080',
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
+      AWS_LWA_INVOKE_MODE: 'response_stream'
     };
 
     Object.assign(environment, props.env);
@@ -87,7 +87,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       handler: "run.sh",
       timeout: cdk.Duration.seconds(60),
       code: lambda.Code.fromAsset(serverOutput),
-      loggingFormat: LoggingFormat.JSON,
+      loggingFormat: lambda.LoggingFormat.JSON,
       layers: [webAdapterLayer],
       environment,
     });
@@ -96,6 +96,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
   cloudfront(path: string): Record<string, cloudfront.BehaviorOptions> {
     const webUrl = this.function.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
+      invokeMode: lambda.InvokeMode.RESPONSE_STREAM
     });
 
     const serverOrigin = new cloudfrontOrigin.FunctionUrlOrigin(webUrl);
