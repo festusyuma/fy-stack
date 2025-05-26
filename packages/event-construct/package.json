@@ -7,7 +7,7 @@
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.174.1",
+    "aws-cdk-lib": "^2.198.0",
     "constructs": "^10.4.2"
   },
   "type": "commonjs",
