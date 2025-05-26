@@ -1,12 +1,10 @@
+import * as path from 'node:path';
+
 import { ApiGatewayConstruct } from '@fy-stack/apigateway-construct';
 import {
-  type AppConstruct,
-  ImageAppConstruct,
-  NextAppRouterConstruct,
-  NextPagesExportConstruct,
-  NodeApiConstruct,
-  NodeAppConstruct,
-  StaticWebsiteConstruct,
+  EcsConstruct,
+  LambdaConstruct,
+  StaticConstruct,
 } from '@fy-stack/app-construct';
 import { AuthConstruct } from '@fy-stack/auth-construct';
 import { CDNConstruct } from '@fy-stack/cdn-construct';
@@ -14,22 +12,12 @@ import { DatabaseConstruct } from '@fy-stack/database-construct';
 import { EventConstruct } from '@fy-stack/event-construct';
 import { SecretsConstruct } from '@fy-stack/secret-construct';
 import { StorageConstruct } from '@fy-stack/storage-construct';
-import { TaskConstruct } from '@fy-stack/task-construct';
-import { CfnOutput } from 'aws-cdk-lib';
+import { AppGrant, Attach, Grant, Grantable } from '@fy-stack/types';
+import { CfnOutput, Stack, Tags } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { Construct } from 'constructs';
 
-import { AppType, FullStackConstructProps } from './types';
-
-const AppBuilds = {
-  [AppType.NEXT_APP_ROUTER]: NextAppRouterConstruct,
-  [AppType.NEXT_PAGE_EXPORT]: NextPagesExportConstruct,
-  [AppType.NODE_APP]: NodeAppConstruct,
-  [AppType.NODE_API]: NodeApiConstruct,
-  [AppType.IMAGE_APP]: ImageAppConstruct,
-  [AppType.STATIC_WEBSITE]: StaticWebsiteConstruct,
-};
+import { AppAttachment, FullStackConstructProps } from './types';
 
 /**
  *
@@ -41,8 +29,9 @@ export class FullStackConstruct extends Construct {
   public storagePolicy?: string;
   public database?: DatabaseConstruct;
   public event?: EventConstruct;
-  public apps?: Record<string, AppConstruct>;
-  public tasks?: Record<string, TaskConstruct>;
+  public ecs?: EcsConstruct;
+  public lambda?: LambdaConstruct;
+  public static?: StaticConstruct;
   public cdn?: CDNConstruct;
   public api?: ApiGatewayConstruct;
   public secret: SecretsConstruct;
@@ -78,61 +67,6 @@ export class FullStackConstruct extends Construct {
       });
     }
 
-    if (props.apps) {
-      const apps: Record<string, AppConstruct> = {};
-
-      Object.assign(
-        apps,
-        Object.fromEntries(
-          Object.entries(props.apps).map(([key, app]) => {
-            const AppTypeConstruct = AppBuilds[app.type];
-
-            return [
-              key,
-              new AppTypeConstruct(this, `${key}App`, {
-                // @ts-expect-error invalid params
-                buildParams: AppTypeConstruct.parse(app.buildParams ?? {}),
-                vpc: this.vpc,
-                ...app
-              }),
-            ];
-          })
-        )
-      );
-
-      this.apps = apps;
-    }
-
-    if (props.task) {
-      const tasks: Record<string, TaskConstruct> = {};
-      const cluster = new ecs.Cluster(this, 'AppCluster', { vpc: this.vpc })
-
-      Object.assign(
-        tasks,
-        Object.fromEntries(
-          Object.entries(props.task).map(([key, task]) => {
-            return [
-              key,
-              new TaskConstruct(this, `${key}Task`, {
-                clusterArn: cluster.clusterArn,
-                vpc: this.vpc,
-                ...task
-              }),
-            ];
-          })
-        )
-      );
-
-      this.tasks = tasks;
-    }
-
-    if (props.events) {
-      this.event = new EventConstruct(this, 'EventConstruct', {
-        resources: { ...this.apps, ...this.tasks },
-        ...props.events,
-      });
-    }
-
     this.secret = new SecretsConstruct(this, 'SecretConstruct', {
       resources: {
         auth: this.auth,
@@ -140,29 +74,102 @@ export class FullStackConstruct extends Construct {
         storage: this.storage,
         event: this.event,
       },
-      secrets: props.secrets,
+      secrets: {
+        REGION: Stack.of(this).region,
+        ENVIRONMENT: props.environment,
+        ...props.secret,
+      },
     });
+
+    if (props.outputs) {
+      new CfnOutput(this, 'SecretsName', {
+        key: 'appSecrets',
+        value: this.secret.secrets.secretName,
+      });
+    }
+
+    if (props.ecs) {
+      this.ecs = new EcsConstruct(this, 'EcsConstruct', {
+        vpc: this.vpc,
+        environmentPath: path.join('/', props.name, '/', props.environment),
+        ...props.ecs,
+      });
+
+      if (this.ecs.server) {
+        this.fromGrants(this.ecs.server, props.ecs.server?.grants);
+
+        for (const i in this.ecs.server.apps) {
+          if (!props.ecs.server?.apps[i].attachment) continue;
+
+          this.fromAttachments(
+            this.ecs.server.apps[i],
+            props.ecs.server.apps[i].attachment
+          );
+        }
+      }
+    }
+
+    if (props.lambda) {
+      this.lambda = new LambdaConstruct(this, 'LambdaConstruct', {
+        vpc: this.vpc,
+        apps: props.lambda,
+      });
+
+      for (const i in this.lambda.apps) {
+        if (props.lambda[i].attachment) {
+          this.fromAttachments(this.lambda.apps[i], props.lambda[i].attachment);
+        }
+
+        if (props.lambda[i].grants) {
+          this.fromGrants(this.lambda.apps[i], props.lambda[i].grants);
+        }
+      }
+    }
+
+    if (props.static) {
+      this.static = new StaticConstruct(this, 'StaticConstruct', {
+        apps: props.static,
+      });
+    }
+
+    const resources = {
+      ...this.ecs?.server?.apps ?? {},
+      ...this.lambda?.apps ?? {},
+      ...this.static?.apps ?? {},
+    };
+
+    if (props.event) {
+      this.event = new EventConstruct(this, 'EventConstruct', {
+        resources: this.lambda?.apps ?? {},
+        ...props.event,
+      });
+    }
 
     if (props.cdn) {
       this.cdn = new CDNConstruct(this, 'CDNConstruct', {
         routes: props.cdn.routes,
         domains: props.cdn.domains,
-        resources: { ...this.apps, storage: this.storage },
+        resources: {
+          ...resources,
+          storage: this.storage,
+        },
       });
 
-      new CfnOutput(this, 'CDN Url', {
-        key: 'cdnURl',
-        value: 'https://' + this.cdn.distribution.domainName,
-      });
+      if (props.outputs) {
+        new CfnOutput(this, 'CDN Url', {
+          key: 'cdnURl',
+          value: 'https://' + this.cdn.distribution.domainName,
+        });
+      }
     }
 
     if (props.api) {
       this.api = new ApiGatewayConstruct(this, 'ApiConstruct', {
         routes: props.api.routes,
-        resources: this.apps,
+        resources,
       });
 
-      if (this.api.api.url) {
+      if (this.api.api.url && props.outputs) {
         new CfnOutput(this, 'Api Url', {
           key: 'apiUrl',
           value: this.api.api.url,
@@ -170,63 +177,41 @@ export class FullStackConstruct extends Construct {
       }
     }
 
-    const resources = {
-      storage: this.storage,
-      database: this.database,
-      auth: this.auth,
-      secrets: this.secret,
-      event: this.event,
-    };
-
-    type ResourceKey = keyof typeof resources;
-
     if (this.storage && this.cdn) {
       this.storagePolicy = JSON.stringify(
         this.storage.cloudfrontPolicy(this.cdn.distribution.distributionId)
       );
 
-      new CfnOutput(this, 'StorageBucketCDNPolicy', {
-        key: 'storageBucketCDNPolicy',
-        value: this.storagePolicy
-      });
-    }
-
-    for (const i in props.apps) {
-      const attachments = Object.entries(props.apps[i]?.attachment ?? {})
-        .map(([key]) => [key, resources[key as ResourceKey]])
-        .filter((v) => !!v);
-
-      if (attachments.length) {
-        this.apps?.[i]?.attach(Object.fromEntries(attachments));
-      }
-
-      const grants =
-        props.apps[i]?.grant
-          ?.map((val) => resources[val as ResourceKey])
-          .filter((v) => !!v) ?? [];
-
-      if (grants.length) {
-        this.apps?.[i]?.grant(...grants);
+      if (props.outputs) {
+        new CfnOutput(this, 'StorageBucketCDNPolicy', {
+          key: 'storageBucketCDNPolicy',
+          value: this.storagePolicy,
+        });
       }
     }
 
-    for (const i in props.task) {
-      const attachments = Object.entries(props.task[i]?.attachment ?? {})
-        .map(([key]) => [key, resources[key as ResourceKey]])
-        .filter((v) => !!v);
+    Tags.of(this).add('App', props.name);
+    Tags.of(this).add('Environment', props.environment);
+  }
 
-      if (attachments.length) {
-        this.tasks?.[i]?.attach(Object.fromEntries(attachments));
-      }
+  fromAttachments(attach: Attach, attachment?: AppAttachment) {
+    const builtAttachment = Object.entries(attachment ?? {})
+      .map(([key]) => [key, this[key as keyof this]])
+      .filter((v) => !!v && !!v[1]);
 
-      const grants =
-        props.task[i]?.grant
-          ?.map((val) => resources[val as ResourceKey])
-          .filter((v) => !!v) ?? [];
+    if (builtAttachment.length) {
+      attach.attach(Object.fromEntries(builtAttachment));
+    }
+  }
 
-      if (grants.length) {
-        this.tasks?.[i]?.grant(...grants);
-      }
+  fromGrants(grant: Grant, grants?: AppGrant[]) {
+    const builtGrants =
+      (grants
+        ?.map((val) => this[val as keyof this])
+        .filter((v) => !!v) as Grantable[]) ?? [];
+
+    if (builtGrants.length) {
+      grant.grant(...builtGrants);
     }
   }
 }

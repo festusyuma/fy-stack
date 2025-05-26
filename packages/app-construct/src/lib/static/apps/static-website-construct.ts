@@ -1,28 +1,30 @@
-import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
-import { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
 import { z } from 'zod';
 
-import { AppConstruct, AppProperties } from './types';
+import { AppConstruct, AppProperties } from '../types';
 
 const BuildParamsSchema = z.object({}).optional();
 
 export class StaticWebsiteConstruct extends Construct implements AppConstruct {
   private readonly static: s3.Bucket;
 
-  constructor(scope: Construct, id: string, props: AppProperties<z.infer<typeof BuildParamsSchema>>) {
+  constructor(
+    scope: Construct,
+    id: string,
+    props: AppProperties<z.infer<typeof BuildParamsSchema>>
+  ) {
     super(scope, id);
 
     this.static = new s3.Bucket(this, `StaticBucket`, {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS_ONLY,
       publicReadAccess: true,
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'index.html',
@@ -37,7 +39,7 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
 
     new s3Deploy.BucketDeployment(this, `StaticDeployment`, {
       destinationBucket: this.static,
-      sources: [s3Deploy.Source.asset(props.output),],
+      sources: [s3Deploy.Source.asset(props.output)],
       retainOnDelete: false,
     });
   }
@@ -67,18 +69,6 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
 
   api(): Record<string, HttpRouteIntegration> {
     throw new Error('api not supported for this construct');
-  }
-
-  attach(attachable: Record<string, Attachable>) {
-    throw new Error('attach not supported for this construct');
-  }
-
-  grant(...grants: Grantable[]) {
-    throw new Error('grant not supported for this construct');
-  }
-
-  subscription(): ITopicSubscription {
-    throw new Error(`subscription not supported for ${this}`);
   }
 
   static parse(params: unknown) {

@@ -29,11 +29,11 @@ import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 import { z } from 'zod';
 
-import { AppConstruct, AppProperties } from './types';
-import { getDefaultLambda } from './utils/getDefaultLambda';
-import { lambdaApi } from './utils/lambda-api';
-import { lambdaAttach } from './utils/lambda-attach';
-import { lambdaGrant } from './utils/lambda-grant';
+import { AppConstruct, AppProperties } from '../types';
+import { getDefaultLambda } from '../utils/getDefaultLambda';
+import { lambdaApi } from '../utils/lambda-api';
+import { lambdaAttach } from '../utils/lambda-attach';
+import { lambdaGrant } from '../utils/lambda-grant';
 
 const BuildParamsSchema = z
   .object({
