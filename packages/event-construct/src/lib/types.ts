@@ -8,7 +8,7 @@ import { UserPool } from 'aws-cdk-lib/aws-cognito';
 import type { CronOptions } from 'aws-cdk-lib/aws-events';
 import type { Duration } from 'aws-cdk-lib/core';
 
-export type AppMessage = ResourceRef & {
+export type MessageHandler = ResourceRef & {
   messages: string[];
 };
 
@@ -28,7 +28,7 @@ export interface EventConstructProps {
   /**
    * List of resource to messages mapping
    * */
-  messages?: AppMessage[];
+  handlers?: MessageHandler[];
   /**
    * List of cron objects
    * */

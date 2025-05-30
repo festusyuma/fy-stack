@@ -1,6 +1,6 @@
 export { EventConstruct } from './lib/event-construct';
 export type {
-  AppMessage,
+  MessageHandler,
   AppSchedule,
   EventConstructProps,
   WebsocketConstructProps,

@@ -21,7 +21,7 @@ export interface AppConstruct
     CDNResource,
     EventResource,
     ApiResource {
-  function?: Function;
+  function: Function;
   queue?: Queue;
 }
 
