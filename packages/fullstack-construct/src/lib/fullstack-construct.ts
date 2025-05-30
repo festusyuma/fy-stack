@@ -15,6 +15,7 @@ import { StorageConstruct } from '@fy-stack/storage-construct';
 import { AppGrant, Attach, Grant, Grantable } from '@fy-stack/types';
 import { CfnOutput, Stack, Tags } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
 import { AppAttachment, FullStackConstructProps } from './types';
@@ -24,6 +25,7 @@ import { AppAttachment, FullStackConstructProps } from './types';
  */
 export class FullStackConstruct extends Construct {
   public vpc: ec2.IVpc;
+  public owner?: iam.IUser | iam.IRole;
   public auth?: AuthConstruct;
   public storage?: StorageConstruct;
   public storagePolicy?: string;
@@ -38,6 +40,8 @@ export class FullStackConstruct extends Construct {
 
   constructor(scope: Construct, id: string, props: FullStackConstructProps) {
     super(scope, id);
+
+    this.owner = this.ownerFromArn(props.ownerArn);
 
     this.vpc = ec2.Vpc.fromLookup(
       this,
@@ -133,9 +137,9 @@ export class FullStackConstruct extends Construct {
     }
 
     const resources = {
-      ...this.ecs?.server?.apps ?? {},
-      ...this.lambda?.apps ?? {},
-      ...this.static?.apps ?? {},
+      ...(this.ecs?.server?.apps ?? {}),
+      ...(this.lambda?.apps ?? {}),
+      ...(this.static?.apps ?? {}),
     };
 
     if (props.event) {
@@ -192,6 +196,41 @@ export class FullStackConstruct extends Construct {
 
     Tags.of(this).add('App', props.name);
     Tags.of(this).add('Environment', props.environment);
+
+    if (this.owner) {
+      this.owner.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['*'],
+          resources: ['*'],
+          conditions: {
+            StringEquals: {
+              'aws:ResourceTag/App': props.name,
+              'aws:ResourceTag/Environment': props.environment,
+            },
+          },
+        })
+      );
+
+      if (this.storage) {
+        this.storage.bucket.addToResourcePolicy(
+          new iam.PolicyStatement({
+            actions: ['*'],
+            resources: [
+              'arn:aws:s3:::' + this.storage.bucket.bucketName + '/*',
+            ],
+            principals: [this.owner],
+          })
+        );
+
+        this.owner.addToPrincipalPolicy(
+          new iam.PolicyStatement({
+            actions: ['s3:*'],
+            resources: [this.storage.bucket.bucketArn],
+          })
+        );
+      }
+    }
   }
 
   fromAttachments(attach: Attach, attachment?: AppAttachment) {
@@ -213,5 +252,22 @@ export class FullStackConstruct extends Construct {
     if (builtGrants.length) {
       grant.grant(...builtGrants);
     }
+  }
+
+  ownerFromArn(ownerArn?: string) {
+    if (!ownerArn) return;
+
+    const [arn] = ownerArn.split('/');
+    const resourceType = arn.split(':').at(-1);
+
+    if (resourceType === 'user') {
+      return iam.User.fromUserArn(this, 'Owner', ownerArn);
+    }
+
+    if (resourceType === 'role') {
+      return iam.Role.fromRoleArn(this, 'Owner', ownerArn);
+    }
+
+    return;
   }
 }

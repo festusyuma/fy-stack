@@ -33,7 +33,7 @@ export type FullStackConstructProps = {
       apps: Record<
         string,
         NonNullable<EcsConstructProps['server']>['apps'][string] & {
-          attachment: AppAttachment;
+          attachment?: AppAttachment;
         }
       >;
     };
@@ -42,7 +42,7 @@ export type FullStackConstructProps = {
     string,
     NonNullable<LambdaConstructProps['apps']>[string] & {
       grants?: AppGrant[];
-      attachment: AppAttachment;
+      attachment?: AppAttachment;
     }
   >;
   static?: StaticConstructProps['apps'];
@@ -51,4 +51,5 @@ export type FullStackConstructProps = {
   api?: { routes: Record<string, ResourceRef> };
   secret?: Record<string, string | undefined>;
   outputs?: boolean;
+  ownerArn?: string;
 };
