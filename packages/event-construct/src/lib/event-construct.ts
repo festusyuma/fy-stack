@@ -51,6 +51,7 @@ export class EventConstruct extends Construct implements Attachable, Grantable {
           new eventsTarget.SnsTopic(this.topic, {
             message: events.RuleTargetInput.fromObject({
               message,
+              payload: {}
             }),
           }),
         ];
