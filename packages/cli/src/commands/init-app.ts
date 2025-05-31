@@ -182,10 +182,11 @@ export async function initApp(props: InitAppProps) {
 
   packageJsonFile["devDependencies"] = {
     ...packageJsonFile["devDependencies"],
-    "aws-cdk": "^2.174.1",
-    "aws-cdk-lib": "^2.174.1",
+    "aws-cdk": "^2.1016.1",
+    "aws-cdk-lib": "^2.198.0",
+    "@aws-sdk/client-sts": "^3.799.0",
     "constructs": "^10.4.2",
-    "@fy-stack/fullstack-construct": "^0.0.142"
+    "@fy-stack/fullstack-construct": "^0.0.143"
   }
 
   if (!fs.existsSync(cdkPath)) fs.writeFileSync(cdkPath, cdkJsonFile)

@@ -87,3 +87,9 @@ export type ResourceRef<T extends string = string> = {
    * */
   $resource: T;
 };
+
+export type StackContext = {
+  loadBalancer?: {
+    priorities?: Record<string, number>
+  }
+}

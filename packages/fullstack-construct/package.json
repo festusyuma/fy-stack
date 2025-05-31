@@ -1,21 +1,21 @@
 {
   "name": "@fy-stack/fullstack-construct",
-  "version": "0.0.142",
+  "version": "0.0.143",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "@fy-stack/apigateway-construct": "0.0.142",
-    "@fy-stack/app-construct": "0.0.142",
-    "@fy-stack/auth-construct": "0.0.142",
-    "@fy-stack/cdn-construct": "0.0.142",
-    "@fy-stack/database-construct": "0.0.142",
-    "@fy-stack/event-construct": "0.0.142",
-    "@fy-stack/secret-construct": "0.0.142",
-    "@fy-stack/storage-construct": "0.0.142",
-    "@fy-stack/task-construct": "0.0.142",
-    "tslib": "^2.3.0"
+    "@fy-stack/apigateway-construct": "0.0.143",
+    "@fy-stack/app-construct": "0.0.143",
+    "@fy-stack/auth-construct": "0.0.143",
+    "@fy-stack/cdn-construct": "0.0.143",
+    "@fy-stack/database-construct": "0.0.143",
+    "@fy-stack/event-construct": "0.0.143",
+    "@fy-stack/secret-construct": "0.0.143",
+    "@fy-stack/storage-construct": "0.0.143",
+    "tslib": "^2.3.0",
+    "@fy-stack/types": "0.0.143"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.174.1",
+    "aws-cdk-lib": "^2.198.0",
     "constructs": "^10.4.2"
   },
   "type": "commonjs",

@@ -22,8 +22,8 @@ export class EventConstruct extends Construct implements Attachable, Grantable {
 
     this.topic = new sns.Topic(this, 'AppTopic');
 
-    for (const i in props?.messages ?? []) {
-      const appMessage = props?.messages?.[i];
+    for (const i in props?.handlers ?? []) {
+      const appMessage = props?.handlers?.[i];
       if (!appMessage) continue;
 
       const app = props.resources?.[appMessage.$resource];
@@ -51,6 +51,7 @@ export class EventConstruct extends Construct implements Attachable, Grantable {
           new eventsTarget.SnsTopic(this.topic, {
             message: events.RuleTargetInput.fromObject({
               message,
+              payload: {}
             }),
           }),
         ];
