@@ -1,6 +1,7 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
-import { AppType, Grant, Grantable } from '@fy-stack/types';
+import { AppType, Grant, Grantable, StackContext } from '@fy-stack/types';
 import * as cdn from 'aws-cdk-lib/aws-cloudfront';
 import * as cdnOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
@@ -20,13 +21,13 @@ const AppBuilds = {
 type EcsServerConstructProps = EcsConstructProps['server'] & {
   vpc: ec2.IVpc;
   environmentPath: string;
+  environment: string;
   cluster: ecs.Cluster;
 };
 
 export class EcsServerConstruct extends Construct implements Grant {
   public apps: Record<string, AppConstruct> = {};
 
-  private priority = 10;
   private readonly appTaskDefinition: ecs.TaskDefinition;
   private loadBalancer?: {
     alb: elbV2.IApplicationLoadBalancer;
@@ -150,7 +151,7 @@ export class EcsServerConstruct extends Construct implements Grant {
 
     this.loadBalancer.listener.addTargetGroups(`${containerName}Rule`, {
       conditions: [elbV2.ListenerCondition.pathPatterns([`${appFullPath}/*`])],
-      priority: this.priority++,
+      priority: this.getAppPriority(appFullPath),
       targetGroups: [appTargetGroup],
     });
 
@@ -158,25 +159,22 @@ export class EcsServerConstruct extends Construct implements Grant {
   }
 
   initLoadBalancer() {
-    if (this.props.useExistingLoadBalancer) {
+    if (this.props.loadBalancer && 'arn' in this.props.loadBalancer) {
       const alb = elbV2.ApplicationLoadBalancer.fromLookup(
         this,
         'LoadBalancer',
-        { loadBalancerArn: this.props.useExistingLoadBalancer.loadBalancerArn }
+        { loadBalancerArn: this.props.loadBalancer.arn }
       );
 
       const listener = elbV2.ApplicationListener.fromLookup(
         this,
         'DefaultListener',
-        {
-          loadBalancerArn: this.props.useExistingLoadBalancer.loadBalancerArn,
-          listenerPort: 80,
-        }
+        { loadBalancerArn: this.props.loadBalancer.arn, listenerPort: 80 }
       );
 
       if (!listener) {
         throw new Error(
-          `no HTTP:80 listener on ${this.props.useExistingLoadBalancer.loadBalancerArn}`
+          `no HTTP:80 listener on ${this.props.loadBalancer.arn}`
         );
       }
 
@@ -197,5 +195,52 @@ export class EcsServerConstruct extends Construct implements Grant {
     });
 
     return { alb, listener };
+  }
+
+  getAppPriority(appPath: string): number {
+    const configPath = './fy-stack.context.json';
+
+    let config: StackContext = {};
+    let priorityRage: [number, number] = [0, 1000];
+
+    if (this.props.loadBalancer && "priorityRange" in this.props.loadBalancer) {
+      priorityRage = this.props.loadBalancer.priorityRange
+    }
+
+    let priority = priorityRage[0];
+
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(
+        fs.readFileSync(configPath).toString()
+      ) as StackContext;
+
+      if (config.loadBalancer?.priorities?.[appPath]) {
+        priority = config.loadBalancer?.priorities?.[appPath];
+      } else {
+        const existingPriorities = Object.values(
+          config.loadBalancer?.priorities ?? {}
+        ).sort();
+
+        while (existingPriorities.includes(priority)) {
+          priority += 1;
+        }
+
+        if (priority > priorityRage[1]) throw new Error(`Priority ${priority} exceeds priority range`)
+      }
+    }
+
+    config = {
+      loadBalancer: {
+        ...(config.loadBalancer ?? {}),
+        priorities: {
+          ...(config.loadBalancer?.priorities ?? {}),
+          [appPath]: priority,
+        },
+      },
+    };
+
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+    return priority;
   }
 }

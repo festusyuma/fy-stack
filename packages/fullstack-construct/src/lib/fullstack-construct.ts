@@ -96,6 +96,7 @@ export class FullStackConstruct extends Construct {
       this.ecs = new EcsConstruct(this, 'EcsConstruct', {
         vpc: this.vpc,
         environmentPath: path.join('/', props.name, '/', props.environment),
+        environment: props.environment,
         ...props.ecs,
       });
 
@@ -108,6 +109,19 @@ export class FullStackConstruct extends Construct {
           this.fromAttachments(
             this.ecs.server.apps[i],
             props.ecs.server.apps[i].attachment
+          );
+        }
+      }
+
+      for (const i in this.ecs.tasks) {
+        if (props.ecs.tasks[i]?.grants) {
+          this.fromGrants(this.ecs.tasks[i], props.ecs.tasks[i]?.grants);
+        }
+
+        if (props.ecs.tasks[i]?.attachment) {
+          this.fromAttachments(
+            this.ecs.tasks[i],
+            props.ecs.tasks[i]?.attachment
           );
         }
       }
@@ -144,7 +158,10 @@ export class FullStackConstruct extends Construct {
 
     if (props.event) {
       this.event = new EventConstruct(this, 'EventConstruct', {
-        resources: this.lambda?.apps ?? {},
+        resources: {
+          ...(this.lambda?.apps ?? {}),
+          ...(this.ecs?.tasks ?? {}),
+        },
         ...props.event,
       });
     }

@@ -14,16 +14,9 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as snsSubscription from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
-import { z } from 'zod';
 
 import { paramsFromAttachable } from '../../util/params-from-attachable';
 import { TaskConstructsProps } from '../types';
-
-const BuildParamsSchema = z
-  .object({
-    cmd: z.string(),
-  })
-  .passthrough();
 
 export class TaskConstruct
   extends Construct
@@ -41,7 +34,7 @@ export class TaskConstruct
     const { container, output, ...definitionProps } = props;
 
     this.taskDefinition = new ecs.FargateTaskDefinition(this, 'Task', {
-      cpu: 265,
+      cpu: 256,
       memoryLimitMiB: 512,
       runtimePlatform: {
         cpuArchitecture: ecs.CpuArchitecture.X86_64,
@@ -129,6 +122,6 @@ export class TaskConstruct
   }
 
   static parse(params: unknown) {
-    return BuildParamsSchema.parse(params);
+    return params
   }
 }

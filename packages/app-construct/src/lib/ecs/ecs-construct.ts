@@ -22,6 +22,7 @@ export class EcsConstruct extends Construct {
         ...props.server,
         cluster: appCluster,
         environmentPath: props.environmentPath,
+        environment: props.environment,
         vpc: props.vpc,
       });
     }

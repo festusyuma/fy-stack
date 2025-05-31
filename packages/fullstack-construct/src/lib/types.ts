@@ -27,7 +27,10 @@ export type FullStackConstructProps = {
   auth?: { groups?: string[] };
   storage?: StorageConstructProps;
   database?: DatabaseConstructProps;
-  ecs?: Omit<EcsConstructProps, 'vpc' | 'environmentPath' | 'server'> & {
+  ecs?: Omit<
+    EcsConstructProps,
+    'vpc' | 'environmentPath' | 'server' | 'tasks' | 'environment'
+  > & {
     server: Omit<NonNullable<EcsConstructProps['server']>, 'apps'> & {
       grants?: AppGrant[];
       apps: Record<
@@ -37,6 +40,13 @@ export type FullStackConstructProps = {
         }
       >;
     };
+    tasks: Record<
+      string,
+      NonNullable<EcsConstructProps['tasks']>[string] & {
+        grants?: AppGrant[];
+        attachment?: AppAttachment;
+      }
+    >;
   };
   lambda?: Record<
     string,
