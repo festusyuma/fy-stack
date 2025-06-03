@@ -1,4 +1,4 @@
-import { ApiResource } from '@fy-stack/types';
+import { ApiResource, type Attachable } from '@fy-stack/types';
 import { CorsHttpMethod, HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { Construct } from "constructs";
 
@@ -12,7 +12,7 @@ import { ApiGatewayConstructProps } from "./types";
  *
  * @throws {Error} Throws an error if the base route is not found.
  */
-export class ApiGatewayConstruct extends Construct {
+export class ApiGatewayConstruct extends Construct implements Attachable {
   public readonly api: HttpApi;
 
   constructor(scope: Construct, id: string, props: ApiGatewayConstructProps) {
@@ -28,28 +28,27 @@ export class ApiGatewayConstruct extends Construct {
           if (!app) throw new Error(`"${val.$resource}" resource not found`);
 
           return [key, app];
-        }),
-      ),
+        })
+      )
     );
 
-    const { "/*": base, ...otherRoutes } = routes;
-    if (!base) throw new Error("no base route");
+    const { '/*': base, ...otherRoutes } = routes;
+    if (!base) throw new Error('no base route');
 
-    const { "": defaultIntegration, ...additionalIntegrations } = base
-      .api("");
+    const { '': defaultIntegration, ...additionalIntegrations } = base.api('');
 
-    if (!defaultIntegration) throw new Error("no default integration");
+    if (!defaultIntegration) throw new Error('no default integration');
 
     for (const i in otherRoutes) {
       Object.assign(additionalIntegrations, otherRoutes[i]?.api(i));
     }
 
-    this.api = new HttpApi(this, "Api", {
+    this.api = new HttpApi(this, 'Api', {
       corsPreflight: {
-        allowHeaders: ["*"],
-        allowOrigins: ["*"],
+        allowHeaders: ['*'],
+        allowOrigins: ['*'],
         allowMethods: [CorsHttpMethod.ANY],
-      }
+      },
     });
 
     for (const i in additionalIntegrations) {
@@ -58,6 +57,12 @@ export class ApiGatewayConstruct extends Construct {
         methods: [HttpMethod.ANY],
         path: i,
       });
+    }
+  }
+
+  attachable(): Record<string, string> {
+    return {
+      domain: this.api.apiEndpoint
     }
   }
 }

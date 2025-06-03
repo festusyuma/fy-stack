@@ -71,27 +71,6 @@ export class FullStackConstruct extends Construct {
       });
     }
 
-    this.secret = new SecretsConstruct(this, 'SecretConstruct', {
-      resources: {
-        auth: this.auth,
-        database: this.database,
-        storage: this.storage,
-        event: this.event,
-      },
-      secrets: {
-        REGION: Stack.of(this).region,
-        ENVIRONMENT: props.environment,
-        ...props.secret,
-      },
-    });
-
-    if (props.outputs) {
-      new CfnOutput(this, 'SecretsName', {
-        key: 'appSecrets',
-        value: this.secret.secrets.secretName,
-      });
-    }
-
     if (props.ecs) {
       this.ecs = new EcsConstruct(this, 'EcsConstruct', {
         vpc: this.vpc,
@@ -99,32 +78,6 @@ export class FullStackConstruct extends Construct {
         environment: props.environment,
         ...props.ecs,
       });
-
-      if (this.ecs.server) {
-        this.fromGrants(this.ecs.server, props.ecs.server?.grants);
-
-        for (const i in this.ecs.server.apps) {
-          if (!props.ecs.server?.apps[i].attachment) continue;
-
-          this.fromAttachments(
-            this.ecs.server.apps[i],
-            props.ecs.server.apps[i].attachment
-          );
-        }
-      }
-
-      for (const i in this.ecs.tasks) {
-        if (props.ecs.tasks[i]?.grants) {
-          this.fromGrants(this.ecs.tasks[i], props.ecs.tasks[i]?.grants);
-        }
-
-        if (props.ecs.tasks[i]?.attachment) {
-          this.fromAttachments(
-            this.ecs.tasks[i],
-            props.ecs.tasks[i]?.attachment
-          );
-        }
-      }
     }
 
     if (props.lambda) {
@@ -132,16 +85,6 @@ export class FullStackConstruct extends Construct {
         vpc: this.vpc,
         apps: props.lambda,
       });
-
-      for (const i in this.lambda.apps) {
-        if (props.lambda[i].attachment) {
-          this.fromAttachments(this.lambda.apps[i], props.lambda[i].attachment);
-        }
-
-        if (props.lambda[i].grants) {
-          this.fromGrants(this.lambda.apps[i], props.lambda[i].grants);
-        }
-      }
     }
 
     if (props.static) {
@@ -198,17 +141,78 @@ export class FullStackConstruct extends Construct {
       }
     }
 
+    this.secret = new SecretsConstruct(this, 'SecretConstruct', {
+      resources: {
+        auth: this.auth,
+        database: this.database,
+        storage: this.storage,
+        event: this.event,
+        cdn: this.cdn,
+        api: this.api,
+      },
+      secrets: {
+        REGION: Stack.of(this).region,
+        ENVIRONMENT: props.environment,
+        ...props.secret,
+      },
+    });
+
+    if (props.outputs) {
+      new CfnOutput(this, 'SecretsName', {
+        key: 'appSecrets',
+        value: this.secret.secrets.secretName,
+      });
+    }
+
+    if (this.ecs && props.ecs) {
+      if (this.ecs.server) {
+        this.fromGrants(this.ecs.server, props.ecs.server?.grants);
+
+        for (const i in this.ecs.server.apps) {
+          if (!props.ecs.server?.apps[i].attachment) continue;
+
+          this.fromAttachments(
+            this.ecs.server.apps[i],
+            props.ecs.server.apps[i].attachment
+          );
+        }
+      }
+
+      for (const i in this.ecs.tasks) {
+        if (props.ecs.tasks[i]?.grants) {
+          this.fromGrants(this.ecs.tasks[i], props.ecs.tasks[i]?.grants);
+        }
+
+        if (props.ecs.tasks[i]?.attachment) {
+          this.fromAttachments(
+            this.ecs.tasks[i],
+            props.ecs.tasks[i]?.attachment
+          );
+        }
+      }
+    }
+
+    if (this.lambda && props.lambda) {
+      for (const i in this.lambda.apps) {
+        if (props.lambda[i].attachment) {
+          this.fromAttachments(this.lambda.apps[i], props.lambda[i].attachment);
+        }
+
+        if (props.lambda[i].grants) {
+          this.fromGrants(this.lambda.apps[i], props.lambda[i].grants);
+        }
+      }
+    }
+
     if (this.storage && this.cdn) {
       this.storagePolicy = JSON.stringify(
         this.storage.cloudfrontPolicy(this.cdn.distribution.distributionId)
       );
 
-      if (props.outputs) {
-        new CfnOutput(this, 'StorageBucketCDNPolicy', {
-          key: 'storageBucketCDNPolicy',
-          value: this.storagePolicy,
-        });
-      }
+      new CfnOutput(this, 'StorageBucketCDNPolicy', {
+        key: 'storageBucketCDNPolicy',
+        value: this.storagePolicy,
+      });
     }
 
     Tags.of(this).add('App', props.name);
