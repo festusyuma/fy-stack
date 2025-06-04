@@ -22,7 +22,7 @@ export class TaskConstruct
   extends Construct
   implements EventResource, Grant, Attach
 {
-  public taskDefinition: ecs.FargateTaskDefinition;
+  public definition: ecs.FargateTaskDefinition;
 
   constructor(
     scope: Construct,
@@ -33,7 +33,7 @@ export class TaskConstruct
 
     const { container, output, ...definitionProps } = props;
 
-    this.taskDefinition = new ecs.FargateTaskDefinition(this, 'Task', {
+    this.definition = new ecs.FargateTaskDefinition(this, 'Task', {
       cpu: 256,
       memoryLimitMiB: 512,
       runtimePlatform: {
@@ -45,7 +45,7 @@ export class TaskConstruct
     if (container) {
       const { image: imageProps, logDuration, ...containerProps } = container;
 
-      this.taskDefinition.addContainer('DefaultImage', {
+      this.definition.addContainer('DefaultImage', {
         image: ecs.ContainerImage.fromAsset(output, {
           platform: ecrAssets.Platform.LINUX_AMD64,
           ...imageProps,
@@ -74,7 +74,7 @@ export class TaskConstruct
       desiredState: 'RUNNING',
       targetParameters: {
         ecsTaskParameters: {
-          taskDefinitionArn: this.taskDefinition.taskDefinitionArn,
+          taskDefinitionArn: this.definition.taskDefinitionArn,
           launchType: 'FARGATE',
           networkConfiguration: {
             awsvpcConfiguration: {
@@ -98,7 +98,7 @@ export class TaskConstruct
     });
 
     queue.grantConsumeMessages(pipeRole);
-    this.taskDefinition.grantRun(pipeRole);
+    this.definition.grantRun(pipeRole);
 
     return new snsSubscription.SqsSubscription(queue, {
       ...props,
@@ -108,7 +108,7 @@ export class TaskConstruct
 
   grant(...grantables: Grantable[]): void {
     for (const i in grantables) {
-      grantables[i].grantable(this.taskDefinition.taskRole);
+      grantables[i].grantable(this.definition.taskRole);
     }
   }
 
@@ -117,7 +117,7 @@ export class TaskConstruct
     Object.assign(params, ...paramsFromAttachable(attachable));
 
     for (const i in params) {
-      this.taskDefinition.defaultContainer?.addEnvironment(i, params[i]);
+      this.definition.defaultContainer?.addEnvironment(i, params[i]);
     }
   }
 
