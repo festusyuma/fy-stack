@@ -45,7 +45,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     const webAdapterLayer = lambda.LayerVersion.fromLayerVersionArn(
       this,
       'WebAdapterLayer',
-      `arn:aws:lambda:${region}:753240598075:layer:LambdaAdapterLayerX86:16`
+      `arn:aws:lambda:${region}:753240598075:layer:LambdaAdapterLayerX86:25`
     );
 
     const environment = {

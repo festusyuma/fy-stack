@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+
 import { Attachable, CDNResource, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import { Stack } from 'aws-cdk-lib';
@@ -21,6 +23,9 @@ export class StorageConstruct
   public bucket: s3.IBucket;
   public table: dynamo.Table | undefined;
 
+  private cdnLink = false;
+  private readonly keyGroup: cloudfront.KeyGroup | undefined;
+
   constructor(scope: Construct, id: string, props: StorageConstructProps) {
     super(scope, id);
 
@@ -34,8 +39,8 @@ export class StorageConstruct
             s3.HttpMethods.PUT,
             s3.HttpMethods.DELETE,
           ],
-          allowedHeaders: ["*"],
-          exposedHeaders: ["ETag"]
+          allowedHeaders: ['*'],
+          exposedHeaders: ['ETag'],
         },
       ],
     };
@@ -57,6 +62,22 @@ export class StorageConstruct
         },
       });
     }
+
+    if (props.keys?.length) {
+      const keys: cloudfront.PublicKey[] = [];
+
+      for (const i in props.keys) {
+        keys.push(
+          new cloudfront.PublicKey(this, `CDNPublicKey${i}`, {
+            encodedKey: fs.readFileSync(props.keys[i]).toString(),
+          })
+        );
+      }
+
+      this.keyGroup = new cloudfront.KeyGroup(this, 'CDNKeyGroup', {
+        items: keys,
+      });
+    }
   }
 
   cloudfront(path: string) {
@@ -71,7 +92,10 @@ export class StorageConstruct
       allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
       cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      trustedKeyGroups: this.keyGroup ? [this.keyGroup] : undefined,
     };
+
+    this.cdnLink = true;
 
     return { [`${path}/*`]: storageBehavior };
   }
@@ -99,8 +123,11 @@ export class StorageConstruct
   attachable() {
     return {
       NAME: this.bucket.bucketName,
+      DOMAIN: this.bucket.bucketDomainName,
       ARN: this.bucket.bucketArn,
       LOG_TABLE: this.table?.tableName ?? '',
+      KEY_PAIR_ID: this.keyGroup?.keyGroupId ?? '',
+      CDN_LINK: `${this.cdnLink}`,
     };
   }
 

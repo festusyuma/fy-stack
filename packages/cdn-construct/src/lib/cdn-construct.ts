@@ -1,4 +1,4 @@
-import type { CDNResource } from '@fy-stack/types';
+import type { Attachable, CDNResource } from '@fy-stack/types';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as route53 from 'aws-cdk-lib/aws-route53';
@@ -11,8 +11,9 @@ import { CDNConstructProps } from './types';
  * CDNConstruct is a custom construct that sets up a CloudFront distribution
  * based on provided routing and resource configurations.
  */
-export class CDNConstruct extends Construct {
+export class CDNConstruct extends Construct implements Attachable {
   public distribution: cloudfront.Distribution;
+  public domainName: string | undefined;
 
   constructor(scope: Construct, id: string, props: CDNConstructProps) {
     super(scope, id);
@@ -43,7 +44,6 @@ export class CDNConstruct extends Construct {
     }
 
     let certificate: acm.Certificate | undefined;
-    let defaultDomainName: string | undefined;
 
     const subjectAlternativeNames: string[] = [];
     const zones: Record<string, route53.IHostedZone> = {};
@@ -55,7 +55,7 @@ export class CDNConstruct extends Construct {
           records: [defaultDomainRecord, ...otherDefaultDomainRecords],
         } = defaultDomain;
 
-        defaultDomainName = this.parseDomain(
+        this.domainName = this.parseDomain(
           defaultDomainRecord,
           defaultDomain.domain
         );
@@ -66,7 +66,7 @@ export class CDNConstruct extends Construct {
           { domainName: defaultDomain.domain }
         );
 
-        zones[defaultDomainName] = zones[defaultDomain.domain];
+        zones[this.domainName] = zones[defaultDomain.domain];
 
         for (const i in otherDefaultDomainRecords) {
           const recordDomain = this.parseDomain(
@@ -97,7 +97,7 @@ export class CDNConstruct extends Construct {
         }
 
         certificate = new acm.Certificate(this, 'DomainCertificate', {
-          domainName: defaultDomainName,
+          domainName: this.domainName,
           subjectAlternativeNames,
           validation: acm.CertificateValidation.fromDnsMultiZone(zones),
         });
@@ -108,8 +108,8 @@ export class CDNConstruct extends Construct {
       defaultBehavior,
       additionalBehaviors,
       certificate,
-      domainNames: defaultDomainName
-        ? [defaultDomainName, ...subjectAlternativeNames]
+      domainNames: this.domainName
+        ? [this.domainName, ...subjectAlternativeNames]
         : undefined,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
     });
@@ -137,5 +137,11 @@ export class CDNConstruct extends Construct {
   private parseDomain(record: string, domain: string) {
     if (record === '*') return domain;
     else return `${record}.${domain}`;
+  }
+
+  attachable(): Record<string, string> {
+    return {
+      domain: 'https://' + (this.domainName ?? this.distribution.domainName),
+    };
   }
 }

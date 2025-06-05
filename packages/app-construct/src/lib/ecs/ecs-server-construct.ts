@@ -27,9 +27,9 @@ type EcsServerConstructProps = EcsConstructProps['server'] & {
 
 export class EcsServerConstruct extends Construct implements Grant {
   public apps: Record<string, AppConstruct> = {};
+  public definition: ecs.TaskDefinition;
 
-  private readonly appTaskDefinition: ecs.TaskDefinition;
-  private loadBalancer?: {
+  public loadBalancer?: {
     alb: elbV2.IApplicationLoadBalancer;
     listener: elbV2.IApplicationListener;
   };
@@ -47,7 +47,7 @@ export class EcsServerConstruct extends Construct implements Grant {
 
     const { definition, apps, cluster, ...serverProps } = props;
 
-    this.appTaskDefinition = new ecs.FargateTaskDefinition(
+    this.definition = new ecs.FargateTaskDefinition(
       this,
       'ServerTaskDefinition',
       {
@@ -63,7 +63,7 @@ export class EcsServerConstruct extends Construct implements Grant {
 
     const service = new ecs.FargateService(this, 'ServerService', {
       cluster,
-      taskDefinition: this.appTaskDefinition,
+      taskDefinition: this.definition,
       capacityProviderStrategies: [{ capacityProvider: 'FARGATE', weight: 1 }],
       desiredCount: 1,
       vpcSubnets: {
@@ -97,7 +97,7 @@ export class EcsServerConstruct extends Construct implements Grant {
               environmentPath: props.environmentPath,
               buildParams: AppTypeConstruct.parse(app.buildParams ?? {}),
               serverOrigin,
-              taskDefinition: this.appTaskDefinition,
+              taskDefinition: this.definition,
               ...app,
             }),
           ];
@@ -108,7 +108,7 @@ export class EcsServerConstruct extends Construct implements Grant {
 
   grant(...grantables: Grantable[]): void {
     for (const i in grantables) {
-      grantables[i].grantable(this.appTaskDefinition.taskRole);
+      grantables[i].grantable(this.definition.taskRole);
     }
   }
 
@@ -203,8 +203,8 @@ export class EcsServerConstruct extends Construct implements Grant {
     let config: StackContext = {};
     let priorityRage: [number, number] = [0, 1000];
 
-    if (this.props.loadBalancer && "priorityRange" in this.props.loadBalancer) {
-      priorityRage = this.props.loadBalancer.priorityRange
+    if (this.props.loadBalancer && 'priorityRange' in this.props.loadBalancer) {
+      priorityRage = this.props.loadBalancer.priorityRange;
     }
 
     let priority = priorityRage[0];
@@ -225,7 +225,8 @@ export class EcsServerConstruct extends Construct implements Grant {
           priority += 1;
         }
 
-        if (priority > priorityRage[1]) throw new Error(`Priority ${priority} exceeds priority range`)
+        if (priority > priorityRage[1])
+          throw new Error(`Priority ${priority} exceeds priority range`);
       }
     }
 
