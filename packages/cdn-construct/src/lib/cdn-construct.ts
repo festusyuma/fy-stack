@@ -34,14 +34,18 @@ export class CDNConstruct extends Construct implements Attachable {
     const { '/*': base, ...otherRoutes } = routes;
     if (!base) throw new Error('no base route');
 
-    const { '/*': defaultBehavior, ...additionalBehaviors } =
+    const { '/*': defaultBehavior, ...additionalDefaultBehaviors } =
       base.cloudfront('');
 
     if (!defaultBehavior) throw new Error('no default behaviour');
 
+    const additionalBehaviors: Record<string, cloudfront.BehaviorOptions> = {}
+
     for (const i in otherRoutes) {
       Object.assign(additionalBehaviors, otherRoutes[i]?.cloudfront(i));
     }
+
+    Object.assign(additionalBehaviors, additionalDefaultBehaviors)
 
     let certificate: acm.Certificate | undefined;
 
