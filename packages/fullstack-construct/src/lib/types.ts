@@ -9,6 +9,9 @@ import type { EventConstructProps } from '@fy-stack/event-construct';
 import type { StorageConstructProps } from '@fy-stack/storage-construct';
 import { AppGrant, type ResourceRef } from '@fy-stack/types';
 
+/**
+ * Attach resource
+ * */
 export type AppAttachment = {
   auth?: boolean;
   storage?: boolean;

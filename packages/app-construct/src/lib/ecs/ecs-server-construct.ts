@@ -72,6 +72,7 @@ export class EcsServerConstruct extends Construct implements Grant {
           : ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       securityGroups: [appSecurityGroup],
+      propagateTags: ecs.PropagatedTagSource.SERVICE,
       ...serverProps,
     });
 

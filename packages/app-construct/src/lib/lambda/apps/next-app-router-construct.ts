@@ -14,8 +14,8 @@ import { Construct } from 'constructs';
 import { z } from 'zod';
 
 import {
-  serverCloudfrontBehaviour,
-  staticCloudfrontBehaviour,
+  AppFile,
+  cloudfrontBehaviours,
   staticDeployment,
 } from '../../shared/next-app-router';
 import { AppConstruct, AppProperties } from '../types';
@@ -31,6 +31,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
   public queue: sqs.Queue | undefined;
 
   private readonly static: s3.Bucket;
+  private readonly files: AppFile;
 
   constructor(
     scope: Construct,
@@ -40,7 +41,10 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     super(scope, id);
 
     const region = cdk.Stack.of(this).region;
-    this.static = staticDeployment(this, props.output);
+    const deployment = staticDeployment(this, props.output);
+
+    this.static = deployment.staticBucket;
+    this.files = deployment.files;
 
     const webAdapterLayer = lambda.LayerVersion.fromLayerVersionArn(
       this,
@@ -80,10 +84,13 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
 
     const serverOrigin = new cloudfrontOrigin.FunctionUrlOrigin(webUrl);
 
-    return {
-      ...serverCloudfrontBehaviour(this, serverOrigin, path),
-      ...staticCloudfrontBehaviour(this.static, path),
-    };
+    return cloudfrontBehaviours(
+      this,
+      this.static,
+      serverOrigin,
+      path,
+      this.files
+    );
   }
 
   cloudfrontPolicy(distributionId: string) {

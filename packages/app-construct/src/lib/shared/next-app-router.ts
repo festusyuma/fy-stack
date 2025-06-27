@@ -7,6 +7,11 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
 
+export type AppFile = {
+  staticFiles: s3Deploy.ISource;
+  publicFiles: s3Deploy.ISource;
+};
+
 export function staticDeployment(app: Construct, output: string) {
   const staticBucket = new s3.Bucket(app, `StaticBucket`, {
     removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -24,27 +29,53 @@ export function staticDeployment(app: Construct, output: string) {
     ],
   });
 
+  const staticFiles = s3Deploy.Source.asset(path.join(output, '/.next/static'));
+  const publicFiles = s3Deploy.Source.asset(path.join(output, '/public'));
+
   new s3Deploy.BucketDeployment(app, `StaticDeployment`, {
     destinationBucket: staticBucket,
-    sources: [s3Deploy.Source.asset(path.join(output, '/.next/static'))],
+    sources: [staticFiles],
     destinationKeyPrefix: '_next/static',
     retainOnDelete: false,
   });
 
   new s3Deploy.BucketDeployment(app, `PublicDeployment`, {
     destinationBucket: staticBucket,
-    sources: [s3Deploy.Source.asset(path.join(output, '/public'))],
+    sources: [publicFiles],
     destinationKeyPrefix: '',
     retainOnDelete: false,
   });
 
-  return staticBucket;
+  return {
+    staticBucket,
+    files: { staticFiles, publicFiles },
+  };
 }
 
-export function staticCloudfrontBehaviour(
+export function cloudfrontBehaviours(
+  app: Construct,
   staticBucket: s3.Bucket,
-  basePath: string
+  serverOrigin: cloudfront.IOrigin,
+  basePath: string,
+  files: AppFile
 ) {
+  if (basePath) {
+    // redeploy files for apps hosted in sub path
+    new s3Deploy.BucketDeployment(app, `${basePath}StaticDeployment`, {
+      destinationBucket: staticBucket,
+      sources: [files.staticFiles],
+      destinationKeyPrefix: `${basePath}/_next/static`,
+      retainOnDelete: false,
+    });
+
+    new s3Deploy.BucketDeployment(app, `${basePath}PublicDeployment`, {
+      destinationBucket: staticBucket,
+      sources: [files.publicFiles],
+      destinationKeyPrefix: basePath,
+      retainOnDelete: false,
+    });
+  }
+
   const staticOrigin = new cloudfrontOrigin.S3StaticWebsiteOrigin(staticBucket);
 
   const staticBehavior: cloudfront.BehaviorOptions = {
@@ -56,21 +87,6 @@ export function staticCloudfrontBehaviour(
     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
   };
 
-  return {
-    [`${basePath}/_next/*`]: staticBehavior,
-    [`${basePath}/*.ico`]: staticBehavior,
-    [`${basePath}/*.png`]: staticBehavior,
-    [`${basePath}/*.svg`]: staticBehavior,
-    [`${basePath}/*.jpg`]: staticBehavior,
-    [`${basePath}/*.jpeg`]: staticBehavior,
-  };
-}
-
-export function serverCloudfrontBehaviour(
-  app: Construct,
-  serverOrigin: cloudfront.IOrigin,
-  basePath: string
-) {
   const imageCachePolicy = new cloudfront.CachePolicy(app, 'ImagePolicy', {
     queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
     maxTtl: cdk.Duration.days(365),
@@ -91,11 +107,17 @@ export function serverCloudfrontBehaviour(
   };
 
   return {
-    [`${basePath}/*`]: appBehaviour,
     [`${basePath}/_next/image`]: {
       ...appBehaviour,
       cachePolicy: imageCachePolicy,
       allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
     },
+    [`${basePath}/_next/*`]: staticBehavior,
+    [`${basePath}/*.ico`]: staticBehavior,
+    [`${basePath}/*.png`]: staticBehavior,
+    [`${basePath}/*.svg`]: staticBehavior,
+    [`${basePath}/*.jpg`]: staticBehavior,
+    [`${basePath}/*.jpeg`]: staticBehavior,
+    [`${basePath}/*`]: appBehaviour,
   };
 }

@@ -7,8 +7,8 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
 import {
-  serverCloudfrontBehaviour,
-  staticCloudfrontBehaviour,
+  AppFile,
+  cloudfrontBehaviours,
   staticDeployment,
 } from '../../shared/next-app-router';
 import { paramsFromAttachable } from '../../util/params-from-attachable';
@@ -22,19 +22,22 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
   public queue: sqs.Queue | undefined;
 
   private readonly static: s3.Bucket;
+  private readonly files: AppFile;
 
   constructor(scope: Construct, id: string, private props: NextAppRouterProps) {
     super(scope, id);
 
-    this.static = staticDeployment(this, props.output);
+    const deployment = staticDeployment(this, props.output);
+    this.static = deployment.staticBucket;
+    this.files = deployment.files;
 
-    this.container = taskDefinitionImage( `${props.appName}AppContainer`, {
+    this.container = taskDefinitionImage(`${props.appName}AppContainer`, {
       taskDefinition: props.taskDefinition,
       port: props.port,
       env: props.env,
       output: props.output,
       container: props.container,
-      environmentPath: props.environmentPath
+      environmentPath: props.environmentPath,
     });
   }
 
@@ -49,10 +52,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     if (!origin) throw new Error('No server origin');
     this.container.addEnvironment('BASE_PATH', basePath);
 
-    return {
-      ...serverCloudfrontBehaviour(this, origin, path),
-      ...staticCloudfrontBehaviour(this.static, path),
-    };
+    return cloudfrontBehaviours(this, this.static, origin, path, this.files);
   }
 
   cloudfrontPolicy(distributionId: string) {
