@@ -60,18 +60,19 @@ export function cloudfrontBehaviours(
   files: AppFile
 ) {
   if (basePath) {
-    // redeploy files for apps hosted in sub path
+    const strippedBasePath = basePath.replace(/^\/+|\/+$/g, '')
+
     new s3Deploy.BucketDeployment(app, `${basePath}StaticDeployment`, {
       destinationBucket: staticBucket,
       sources: [files.staticFiles],
-      destinationKeyPrefix: `${basePath}/_next/static`,
+      destinationKeyPrefix: `${strippedBasePath}/_next/static`,
       retainOnDelete: false,
     });
 
     new s3Deploy.BucketDeployment(app, `${basePath}PublicDeployment`, {
       destinationBucket: staticBucket,
       sources: [files.publicFiles],
-      destinationKeyPrefix: basePath,
+      destinationKeyPrefix: strippedBasePath,
       retainOnDelete: false,
     });
   }
