@@ -116,6 +116,7 @@ export class CDNConstruct extends Construct implements Attachable {
         ? [this.domainName, ...subjectAlternativeNames]
         : undefined,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
+      enableLogging: true
     });
 
     if (props.domains) {

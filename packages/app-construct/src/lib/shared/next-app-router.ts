@@ -60,19 +60,19 @@ export function cloudfrontBehaviours(
   files: AppFile
 ) {
   if (basePath) {
-    const strippedBasePath = basePath.replace(/^\/+|\/+$/g, '')
+    const strippedBasePath = basePath.replace(/^\/+|\/+$/g, '');
 
     new s3Deploy.BucketDeployment(app, `${basePath}StaticDeployment`, {
       destinationBucket: staticBucket,
       sources: [files.staticFiles],
-      destinationKeyPrefix: `${strippedBasePath}/_next/static`,
+      destinationKeyPrefix: `${strippedBasePath}/_next/static/`,
       retainOnDelete: false,
     });
 
     new s3Deploy.BucketDeployment(app, `${basePath}PublicDeployment`, {
       destinationBucket: staticBucket,
       sources: [files.publicFiles],
-      destinationKeyPrefix: strippedBasePath,
+      destinationKeyPrefix: `${strippedBasePath}/`,
       retainOnDelete: false,
     });
   }
@@ -108,17 +108,12 @@ export function cloudfrontBehaviours(
   };
 
   return {
-    [`${basePath}/_next/image`]: {
-      ...appBehaviour,
+    [`${basePath}/_next/image`]: Object.assign({}, appBehaviour, {
       cachePolicy: imageCachePolicy,
       allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
-    },
+    }),
     [`${basePath}/_next/*`]: staticBehavior,
-    [`${basePath}/*.ico`]: staticBehavior,
-    [`${basePath}/*.png`]: staticBehavior,
-    [`${basePath}/*.svg`]: staticBehavior,
-    [`${basePath}/*.jpg`]: staticBehavior,
-    [`${basePath}/*.jpeg`]: staticBehavior,
+    [`${basePath}/*.*`]: staticBehavior,
     [`${basePath}/*`]: appBehaviour,
   };
 }

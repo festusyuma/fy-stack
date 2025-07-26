@@ -9,7 +9,11 @@ import { z } from 'zod';
 
 import { AppConstruct, AppProperties } from '../types';
 
-const BuildParamsSchema = z.object({}).optional();
+const BuildParamsSchema = z
+  .object({
+    spa: z.boolean().optional(),
+  })
+  .optional();
 
 export class StaticWebsiteConstruct extends Construct implements AppConstruct {
   private readonly static: s3.Bucket;
@@ -17,7 +21,7 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
   constructor(
     scope: Construct,
     id: string,
-    props: AppProperties<z.infer<typeof BuildParamsSchema>>
+    private props: AppProperties<z.infer<typeof BuildParamsSchema>>
   ) {
     super(scope, id);
 
@@ -58,8 +62,48 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
     };
 
+    let staticPageBehaviour: cloudfront.BehaviorOptions = Object.assign({}, staticBehavior);
+
+    if (this.props.buildParams?.spa) {
+      const spaRewriteFunction = new cloudfront.Function(this, 'SpaRewrite', {
+        code: cloudfront.FunctionCode.fromInline(`
+        function handler(event) {
+          var request = event.request
+          
+          if (!request.uri.endsWith('/')) {
+            return {
+              statusCode: 301,
+              statusDescription: 'Moved Permanently',
+              headers: {
+                  location: {
+                      value: request.uri + '/'
+                  }
+              }
+            }
+          }
+          
+          if (request.uri !== "${path || '/'}") {
+            request.uri = '/index.html'
+          }
+        
+          return request;
+        }
+      `),
+      });
+
+      staticPageBehaviour = Object.assign(staticPageBehaviour, {
+        functionAssociations: [
+          {
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+            function: spaRewriteFunction,
+          },
+        ],
+      });
+    }
+
     return {
-      [`${path}/*`]: staticBehavior,
+      [`${path}/*.*`]: staticBehavior,
+      [`${path}/*`]: staticPageBehaviour,
     };
   }
 
