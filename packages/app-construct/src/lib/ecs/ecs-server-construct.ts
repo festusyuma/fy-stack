@@ -28,6 +28,7 @@ type EcsServerConstructProps = EcsConstructProps['server'] & {
 export class EcsServerConstruct extends Construct implements Grant {
   public apps: Record<string, AppConstruct> = {};
   public definition: ecs.TaskDefinition;
+  public service: ecs.BaseService;
 
   public loadBalancer?: {
     alb: elbV2.IApplicationLoadBalancer;
@@ -61,7 +62,7 @@ export class EcsServerConstruct extends Construct implements Grant {
       }
     );
 
-    const service = new ecs.FargateService(this, 'ServerService', {
+    this.service = new ecs.FargateService(this, 'ServerService', {
       cluster,
       taskDefinition: this.definition,
       capacityProviderStrategies: [{ capacityProvider: 'FARGATE', weight: 1 }],
@@ -76,12 +77,14 @@ export class EcsServerConstruct extends Construct implements Grant {
       ...serverProps,
     });
 
+    this.service.connections.securityGroups[0].securityGroupId
+
     const serverOrigin = (
       port: number,
       containerName: string,
       appPath: string,
       healthPath?: string
-    ) => this.serverOrigin(service, port, containerName, appPath, healthPath);
+    ) => this.serverOrigin(this.service, port, containerName, appPath, healthPath);
 
     serverOrigin.bind(this);
 
