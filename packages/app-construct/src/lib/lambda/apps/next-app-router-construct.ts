@@ -19,9 +19,9 @@ import {
   staticDeployment,
 } from '../../shared/next-app-router';
 import { AppConstruct, AppProperties } from '../types';
+import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
-import { getDefaultLambda } from '../utils/getDefaultLambda';
 
 const BuildParamsSchema = z.object({ cmd: z.string() }).passthrough();
 

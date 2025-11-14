@@ -1,21 +1,21 @@
 import { Attachable, Grantable } from '@fy-stack/types';
+import { Duration } from 'aws-cdk-lib';
 import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { BehaviorOptions } from 'aws-cdk-lib/aws-cloudfront';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
 import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 import { z } from 'zod';
 
 import { AppConstruct, AppProperties } from '../types';
+import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
-import { getDefaultLambda } from '../utils/getDefaultLambda';
-import { Queue } from 'aws-cdk-lib/aws-sqs';
-import { Duration } from 'aws-cdk-lib';
-import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 const BuildParamsSchema = z
   .object({ handler: z.string().optional() })
@@ -51,7 +51,7 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
 
       this.function.addEventSource(
         new SqsEventSource(this.queue, {
-          batchSize: props.queue.batchSize,
+          batchSize: batchSize,
         })
       );
     }

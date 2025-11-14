@@ -1,8 +1,8 @@
 import { Duration } from 'aws-cdk-lib';
-
-import { AppProperties } from '../types';
 import { FunctionProps, LoggingFormat } from 'aws-cdk-lib/aws-lambda';
 import type { Construct } from 'constructs';
+
+import { AppProperties } from '../types';
 
 export function getDefaultLambda(
   scope: Construct,

@@ -2,10 +2,10 @@ import path from 'node:path';
 
 import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
+import type { LogGroup } from 'aws-cdk-lib/aws-logs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 
 import type { AppProperties } from '../types';
-import type { LogGroup } from 'aws-cdk-lib/aws-logs';
 
 type Props = {
   output: string;

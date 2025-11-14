@@ -7,12 +7,12 @@ import * as cdnOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as elbV2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import type { LogGroup } from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 
 import { ImageAppConstruct } from './apps/image-app-construct';
 import { NextAppRouterConstruct } from './apps/next-app-router-construct';
 import { AppConstruct, EcsConstructProps } from './types';
-import type { LogGroup } from 'aws-cdk-lib/aws-logs';
 
 const AppBuilds = {
   [AppType.NEXT_APP_ROUTER]: NextAppRouterConstruct,
@@ -78,8 +78,6 @@ export class EcsServerConstruct extends Construct implements Grant {
       propagateTags: ecs.PropagatedTagSource.SERVICE,
       ...serverProps,
     });
-
-    this.service.connections.securityGroups[0].securityGroupId;
 
     const serverOrigin = (
       port: number,

@@ -8,8 +8,8 @@ import {
 } from '@fy-stack/types';
 import type { IVpc } from 'aws-cdk-lib/aws-ec2';
 import type { Function, FunctionProps } from 'aws-cdk-lib/aws-lambda';
-import type { Queue, QueueProps } from 'aws-cdk-lib/aws-sqs';
 import type { ILogGroup } from 'aws-cdk-lib/aws-logs';
+import type { Queue, QueueProps } from 'aws-cdk-lib/aws-sqs';
 
 export type LambdaConstructProps = {
   vpc?: IVpc;

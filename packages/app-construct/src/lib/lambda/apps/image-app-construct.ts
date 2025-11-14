@@ -82,7 +82,7 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
 
       this.function.addEventSource(
         new SqsEventSource(this.queue, {
-          batchSize: props.queue.batchSize,
+          batchSize,
         })
       );
     }

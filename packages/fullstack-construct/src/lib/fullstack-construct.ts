@@ -16,10 +16,10 @@ import { AppGrant, Attach, Grant, Grantable } from '@fy-stack/types';
 import { CfnOutput, Stack, Tags } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 
 import { AppAttachment, FullStackConstructProps } from './types';
-import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 
 /**
  *

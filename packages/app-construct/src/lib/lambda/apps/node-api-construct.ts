@@ -13,10 +13,10 @@ import { Construct } from 'constructs';
 import { z } from 'zod';
 
 import { AppConstruct, AppProperties } from '../types';
+import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaApi } from '../utils/lambda-api';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
-import { getDefaultLambda } from '../utils/getDefaultLambda';
 
 const BuildParamsSchema = z.object({ cmd: z.string() }).passthrough();
 
@@ -47,7 +47,7 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
     ];
 
     const { cmd, ...functionProps } = props.buildParams;
-    fs.writeFileSync(path.join(props.output, 'run.sh'), props.buildParams.cmd);
+    fs.writeFileSync(path.join(props.output, 'run.sh'), cmd);
 
     const defaultProps = getDefaultLambda(this, props);
 
