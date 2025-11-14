@@ -51,8 +51,9 @@ export class TaskConstruct
           ...imageProps,
         }),
         logging: new ecs.AwsLogDriver({
-          streamPrefix: `${id}/task-runner`,
+          streamPrefix: `${props.taskName}TaskContainer`,
           logRetention: logDuration ?? logs.RetentionDays.ONE_DAY,
+          logGroup: props.logGroup,
         }),
         ...containerProps,
       });
@@ -122,6 +123,6 @@ export class TaskConstruct
   }
 
   static parse(params: unknown) {
-    return params
+    return params;
   }
 }

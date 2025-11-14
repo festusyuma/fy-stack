@@ -12,6 +12,7 @@ import { Construct } from 'constructs';
 import { ImageAppConstruct } from './apps/image-app-construct';
 import { NextAppRouterConstruct } from './apps/next-app-router-construct';
 import { AppConstruct, EcsConstructProps } from './types';
+import type { LogGroup } from 'aws-cdk-lib/aws-logs';
 
 const AppBuilds = {
   [AppType.NEXT_APP_ROUTER]: NextAppRouterConstruct,
@@ -20,6 +21,7 @@ const AppBuilds = {
 
 type EcsServerConstructProps = EcsConstructProps['server'] & {
   vpc: ec2.IVpc;
+  logGroup: LogGroup;
   environmentPath: string;
   environment: string;
   cluster: ecs.Cluster;
@@ -77,14 +79,15 @@ export class EcsServerConstruct extends Construct implements Grant {
       ...serverProps,
     });
 
-    this.service.connections.securityGroups[0].securityGroupId
+    this.service.connections.securityGroups[0].securityGroupId;
 
     const serverOrigin = (
       port: number,
       containerName: string,
       appPath: string,
       healthPath?: string
-    ) => this.serverOrigin(this.service, port, containerName, appPath, healthPath);
+    ) =>
+      this.serverOrigin(this.service, port, containerName, appPath, healthPath);
 
     serverOrigin.bind(this);
 
@@ -98,6 +101,7 @@ export class EcsServerConstruct extends Construct implements Grant {
             key,
             new AppTypeConstruct(this, `${key}App`, {
               appName: key,
+              logGroup: props.logGroup,
               environmentPath: props.environmentPath,
               buildParams: AppTypeConstruct.parse(app.buildParams ?? {}),
               serverOrigin,

@@ -11,9 +11,10 @@ import type {
   TaskDefinition,
 } from 'aws-cdk-lib/aws-ecs';
 import type { ApplicationLoadBalancerProps } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
-import type { RetentionDays } from 'aws-cdk-lib/aws-logs';
+import type { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 
 export type EcsConstructProps = {
+  logGroup: LogGroup;
   environmentPath: string;
   environment: string;
   vpc: IVpc;
@@ -75,6 +76,7 @@ export type TaskApp = {
 export type AppProperties<BuildParams = Record<string, unknown>> = {
   appName: string;
   environmentPath: string;
+  logGroup: LogGroup;
   taskDefinition: TaskDefinition;
   env?: Record<string, string>;
   buildParams: BuildParams;
@@ -94,6 +96,8 @@ export type AppProperties<BuildParams = Record<string, unknown>> = {
 
 export type TaskConstructsProps = FargateTaskDefinitionProps & {
   vpc: IVpc;
+  logGroup: LogGroup;
+  taskName: string;
   cluster: Cluster;
   env?: Record<string, string>;
   /** Directory of build output to be deployed */

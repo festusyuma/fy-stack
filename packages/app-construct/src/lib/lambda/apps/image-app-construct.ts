@@ -12,7 +12,6 @@ import {
 import { FunctionUrlOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import {
-  AssetImageCodeProps,
   Code,
   Function,
   FunctionUrlAuthType,
@@ -42,7 +41,8 @@ const BuildParamsSchema = z
         file: z.string().optional(),
         cmd: z.string().array().optional(),
       })
-      .passthrough(),
+      .passthrough()
+      .optional(),
   })
   .passthrough();
 
@@ -53,25 +53,31 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
   constructor(
     scope: Construct,
     id: string,
-    props: AppProperties<
-      z.infer<typeof BuildParamsSchema> & AssetImageCodeProps
-    >
+    props: AppProperties<z.infer<typeof BuildParamsSchema>>
   ) {
     super(scope, id);
 
+    const { container, ...functionProps } = props.buildParams;
+
     this.function = new Function(this, `AppFunction`, {
-      ...getDefaultLambda(props),
+      ...getDefaultLambda(this, props),
       code: Code.fromAssetImage(props.output, {
         platform: Platform.LINUX_AMD64,
-        ...props.buildParams.container,
+        ...container,
       }),
       handler: Handler.FROM_IMAGE,
       runtime: Runtime.FROM_IMAGE,
+      ...functionProps,
     });
 
     if (props.queue) {
+      const { batchSize, ...queueProps } = props.queue;
+
       this.queue = new Queue(this, 'AppQueue', {
-        visibilityTimeout: Duration.seconds((props.timeout ?? 30) + 30),
+        visibilityTimeout:
+          queueProps.visibilityTimeout ??
+          Duration.seconds((props.timeout ?? 30) + 30),
+        ...queueProps,
       });
 
       this.function.addEventSource(

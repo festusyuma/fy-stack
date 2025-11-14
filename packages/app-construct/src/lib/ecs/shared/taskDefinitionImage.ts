@@ -4,15 +4,16 @@ import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 
-import { AppProperties } from '../types';
+import type { AppProperties } from '../types';
+import type { LogGroup } from 'aws-cdk-lib/aws-logs';
 
 type Props = {
   output: string;
+  logGroup: LogGroup;
   taskDefinition: ecs.TaskDefinition;
   env?: Record<string, string>;
   port: number;
   container?: AppProperties['container'];
-  environmentPath: string;
 };
 
 export function taskDefinitionImage(id: string, props: Props) {
@@ -24,8 +25,9 @@ export function taskDefinitionImage(id: string, props: Props) {
       ...(image ?? {}),
     }),
     logging: new ecs.AwsLogDriver({
-      streamPrefix: `${props.environmentPath}/${id}`,
+      streamPrefix: id,
       logRetention: logDuration ?? logs.RetentionDays.ONE_DAY,
+      logGroup: props.logGroup,
     }),
     environment: {
       ...(props.env ?? {}),

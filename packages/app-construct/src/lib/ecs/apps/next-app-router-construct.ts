@@ -30,15 +30,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     const deployment = staticDeployment(this, props.output);
     this.static = deployment.staticBucket;
     this.files = deployment.files;
-
-    this.container = taskDefinitionImage(`${props.appName}AppContainer`, {
-      taskDefinition: props.taskDefinition,
-      port: props.port,
-      env: props.env,
-      output: props.output,
-      container: props.container,
-      environmentPath: props.environmentPath,
-    });
+    this.container = taskDefinitionImage(`${props.appName}AppContainer`, props);
   }
 
   cloudfront(path: string): Record<string, cloudfront.BehaviorOptions> {

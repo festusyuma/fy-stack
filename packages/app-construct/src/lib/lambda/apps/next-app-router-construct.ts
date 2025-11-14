@@ -21,10 +21,9 @@ import {
 import { AppConstruct, AppProperties } from '../types';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
+import { getDefaultLambda } from '../utils/getDefaultLambda';
 
-const BuildParamsSchema = z.object({
-  cmd: z.string(),
-});
+const BuildParamsSchema = z.object({ cmd: z.string() }).passthrough();
 
 export class NextAppRouterConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
@@ -59,20 +58,21 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       AWS_LWA_INVOKE_MODE: 'response_stream',
     };
 
-    Object.assign(environment, props.env);
-
+    const { cmd, ...functionProps } = props.buildParams;
     const serverOutput = path.join(props.output, '/.next/standalone');
-    fs.writeFileSync(path.join(serverOutput, 'run.sh'), props.buildParams.cmd);
+
+    fs.writeFileSync(path.join(serverOutput, 'run.sh'), cmd);
+
+    const defaultProps = getDefaultLambda(this, props);
 
     this.function = new lambda.Function(this, `AppFunction`, {
+      ...defaultProps,
+      environment: Object.assign({}, defaultProps.environment, environment),
       runtime: lambda.Runtime.NODEJS_20_X,
-      memorySize: 512,
       handler: 'run.sh',
-      timeout: cdk.Duration.seconds(60),
       code: lambda.Code.fromAsset(serverOutput),
-      loggingFormat: lambda.LoggingFormat.JSON,
       layers: [webAdapterLayer],
-      environment,
+      ...functionProps,
     });
   }
 

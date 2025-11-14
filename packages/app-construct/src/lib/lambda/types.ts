@@ -7,12 +7,14 @@ import {
   type Grant,
 } from '@fy-stack/types';
 import type { IVpc } from 'aws-cdk-lib/aws-ec2';
-import type { Function } from 'aws-cdk-lib/aws-lambda';
-import { Queue } from 'aws-cdk-lib/aws-sqs';
+import type { Function, FunctionProps } from 'aws-cdk-lib/aws-lambda';
+import type { Queue, QueueProps } from 'aws-cdk-lib/aws-sqs';
+import type { ILogGroup } from 'aws-cdk-lib/aws-logs';
 
 export type LambdaConstructProps = {
   vpc?: IVpc;
   apps: Record<string, App>;
+  logGroup: ILogGroup;
 };
 
 export interface AppConstruct
@@ -31,17 +33,14 @@ export type App = {
     | typeof AppType.NEXT_APP_ROUTER
     | typeof AppType.NODE_APP
     | typeof AppType.NODE_API;
-  output: string;
-  env?: Record<string, string>;
-  queue?: { batchSize?: number };
-  buildParams?: Record<string, unknown>;
-};
+} & Omit<AppProperties, 'vpc' | 'logGroup'>;
 
 export type AppProperties<BuildParams = Record<string, unknown>> = {
-  queue?: { batchSize?: number };
+  logGroup: ILogGroup;
+  queue?: { batchSize?: number } & Partial<QueueProps>;
   env?: Record<string, string>;
   timeout?: number;
-  buildParams: BuildParams;
+  buildParams: BuildParams & Partial<FunctionProps>;
   output: string;
   vpc?: IVpc;
 };

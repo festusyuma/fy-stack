@@ -19,6 +19,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
 import { AppAttachment, FullStackConstructProps } from './types';
+import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 
 /**
  *
@@ -42,6 +43,11 @@ export class FullStackConstruct extends Construct {
     super(scope, id);
 
     this.owner = this.ownerFromArn(props.ownerArn);
+
+    const logGroup = new LogGroup(this, 'AppLogs', {
+      logGroupName: `${props.name}-${props.environment}-logs`,
+      retention: RetentionDays.ONE_WEEK,
+    });
 
     this.vpc = ec2.Vpc.fromLookup(
       this,
@@ -84,6 +90,7 @@ export class FullStackConstruct extends Construct {
       this.lambda = new LambdaConstruct(this, 'LambdaConstruct', {
         vpc: this.vpc,
         apps: props.lambda,
+        logGroup,
       });
     }
 
@@ -215,8 +222,8 @@ export class FullStackConstruct extends Construct {
       });
     }
 
-    Tags.of(this).add('App', props.name);
-    Tags.of(this).add('Environment', props.environment);
+    Tags.of(scope).add('App', props.name);
+    Tags.of(scope).add('Environment', props.environment);
 
     if (this.owner) {
       this.owner.addToPrincipalPolicy(
