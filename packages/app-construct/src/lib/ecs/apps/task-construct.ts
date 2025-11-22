@@ -8,7 +8,6 @@ import {
 import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as logs from 'aws-cdk-lib/aws-logs';
 import * as pipes from 'aws-cdk-lib/aws-pipes';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as snsSubscription from 'aws-cdk-lib/aws-sns-subscriptions';
@@ -52,7 +51,6 @@ export class TaskConstruct
         }),
         logging: new ecs.AwsLogDriver({
           streamPrefix: `${props.taskName}TaskContainer`,
-          logRetention: logDuration ?? logs.RetentionDays.ONE_DAY,
           logGroup: props.logGroup,
         }),
         ...containerProps,

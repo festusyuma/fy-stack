@@ -3,6 +3,7 @@ import path from 'node:path';
 import * as cdk from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
@@ -88,12 +89,17 @@ export function cloudfrontBehaviours(
     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
   };
 
-  const imageCachePolicy = new cloudfront.CachePolicy(app, 'ImagePolicy', {
-    queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
-    maxTtl: cdk.Duration.days(365),
-    enableAcceptEncodingGzip: true,
-    enableAcceptEncodingBrotli: true,
-  });
+  const imageCachePolicyID = ssm.StringParameter.fromStringParameterName(
+    app,
+    'NextAppRouterImagePolicyArn',
+    '/fy-stack/ImagePolicyID'
+  );
+
+  const imageCachePolicy = cloudfront.CachePolicy.fromCachePolicyId(
+    app,
+    'ImagePolicy',
+    imageCachePolicyID.stringValue
+  );
 
   const appBehaviour: cloudfront.BehaviorOptions = {
     origin: serverOrigin,

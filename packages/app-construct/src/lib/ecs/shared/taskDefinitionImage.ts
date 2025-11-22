@@ -3,7 +3,6 @@ import path from 'node:path';
 import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import type { LogGroup } from 'aws-cdk-lib/aws-logs';
-import * as logs from 'aws-cdk-lib/aws-logs';
 
 import type { AppProperties } from '../types';
 
@@ -26,7 +25,6 @@ export function taskDefinitionImage(id: string, props: Props) {
     }),
     logging: new ecs.AwsLogDriver({
       streamPrefix: id,
-      logRetention: logDuration ?? logs.RetentionDays.ONE_DAY,
       logGroup: props.logGroup,
     }),
     environment: {

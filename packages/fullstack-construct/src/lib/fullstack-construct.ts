@@ -13,7 +13,7 @@ import { EventConstruct } from '@fy-stack/event-construct';
 import { SecretsConstruct } from '@fy-stack/secret-construct';
 import { StorageConstruct } from '@fy-stack/storage-construct';
 import { AppGrant, Attach, Grant, Grantable } from '@fy-stack/types';
-import { CfnOutput, Stack, Tags } from 'aws-cdk-lib';
+import { CfnOutput, RemovalPolicy, Stack, Tags } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
@@ -47,6 +47,7 @@ export class FullStackConstruct extends Construct {
     const logGroup = new LogGroup(this, 'AppLogs', {
       logGroupName: `${props.name}-${props.environment}-logs`,
       retention: RetentionDays.ONE_WEEK,
+      removalPolicy: RemovalPolicy.DESTROY,
     });
 
     this.vpc = ec2.Vpc.fromLookup(
@@ -82,6 +83,7 @@ export class FullStackConstruct extends Construct {
         vpc: this.vpc,
         environmentPath: path.join('/', props.name, '/', props.environment),
         environment: props.environment,
+        logGroup,
         ...props.ecs,
       });
     }

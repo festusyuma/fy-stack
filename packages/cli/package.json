@@ -4,6 +4,8 @@
   "dependencies": {
     "@aws-sdk/client-iam": "^3.731.1",
     "@aws-sdk/client-sts": "^3.731.1",
+    "@aws-sdk/client-ssm": "^3.731.1",
+    "@aws-sdk/client-cloudfront": "^3.731.1",
     "@inquirer/prompts": "^7.2.3",
     "commander": "^13.0.0",
     "tslib": "^2.3.0"
