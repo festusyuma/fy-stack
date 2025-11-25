@@ -8,8 +8,8 @@
     "zod": "^3.24.1"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.198.0",
-    "constructs": "^10.4.2"
+    "aws-cdk-lib": "^2.229.1",
+    "constructs": "^10.4.3"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
