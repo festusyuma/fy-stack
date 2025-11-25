@@ -1,21 +1,29 @@
-import {  HttpUrlIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import { HttpUrlIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Function } from 'aws-cdk-lib/aws-lambda';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import path from 'node:path';
 
-export function lambdaApi(func: Function, path: string) {
+export function lambdaApi(func: Function, basePath: string) {
+  const strippedPath = basePath.replace(/^\/+|\/+$/g, '');
+
   const apiUrl = func.addFunctionUrl({
     authType: lambda.FunctionUrlAuthType.NONE,
   });
 
-  func.addEnvironment('BASE_PATH', path);
+  func.addEnvironment('BASE_PATH', basePath);
+
+  const wildcardIntegration = new HttpUrlIntegration(
+    'AppIntegration',
+    apiUrl.url + path.join(strippedPath, '{proxy}')
+  );
 
   const integration = new HttpUrlIntegration(
-    'AppIntegration',
-    apiUrl.url + '{proxy}'
+    'AppWildcardIntegration',
+    apiUrl.url + strippedPath
   );
 
   return {
-    [path]: integration,
-    [`${path}/{proxy+}`]: integration,
+    [basePath]: integration,
+    [`${basePath}/{proxy+}`]: wildcardIntegration,
   };
 }

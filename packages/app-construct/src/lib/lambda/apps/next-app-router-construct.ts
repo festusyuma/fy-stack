@@ -7,6 +7,7 @@ import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import { InvokeMode } from 'aws-cdk-lib/aws-lambda';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
@@ -22,6 +23,8 @@ import { AppConstruct, AppProperties } from '../types';
 import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
+import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
+import { HttpUrlIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 
 const BuildParamsSchema = z.object({ cmd: z.string() }).passthrough();
 
@@ -97,8 +100,74 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     throw new Error(`cloudfrontPolicy not supported for ${this}`);
   }
 
-  api(): Record<string, HttpRouteIntegration> {
-    throw new Error('api not supported for this construct');
+  api(basePath: string): Record<string, HttpRouteIntegration> {
+    const strippedBasePath = basePath.replace(/^\/+|\/+$/g, '');
+
+    const apiUrl = this.function.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+      invokeMode: InvokeMode.RESPONSE_STREAM,
+    });
+
+    if (strippedBasePath) {
+      new s3Deploy.BucketDeployment(
+        this,
+        `${strippedBasePath}StaticDeployment`,
+        {
+          destinationBucket: this.static,
+          sources: [this.files.staticFiles],
+          destinationKeyPrefix: `${strippedBasePath}/_next/static/`,
+          retainOnDelete: false,
+        }
+      );
+
+      new s3Deploy.BucketDeployment(
+        this,
+        `${strippedBasePath}PublicDeployment`,
+        {
+          destinationBucket: this.static,
+          sources: [this.files.publicFiles],
+          destinationKeyPrefix: `${strippedBasePath}/`,
+          retainOnDelete: false,
+        }
+      );
+
+      this.function.addEnvironment('BASE_PATH', basePath);
+    }
+
+    const imageIntegration = new HttpUrlIntegration(
+      'AppImageIntegration',
+      apiUrl.url + path.join(strippedBasePath, '_next/image', '{proxy}')
+    );
+
+    const staticIntegration = new HttpUrlIntegration(
+      'AppStaticIntegration',
+      this.static.bucketWebsiteUrl +
+        path.join(strippedBasePath, '/_next', '{proxy}')
+    );
+
+    const publicIntegration = new HttpUrlIntegration(
+      'AppPublicIntegration',
+      this.static.bucketWebsiteUrl +
+        path.join(strippedBasePath, '/public', '{proxy}')
+    );
+
+    const wildcardIntegration = new HttpUrlIntegration(
+      'AppWildcardIntegration',
+      apiUrl.url + path.join(strippedBasePath, '{proxy}')
+    );
+
+    const defaultIntegration = new HttpUrlIntegration(
+      'AppIntegration',
+      apiUrl.url + strippedBasePath
+    );
+
+    return {
+      [`${basePath}/_next/image/{proxy+}`]: imageIntegration,
+      [`${basePath}/_next/{proxy+}`]: staticIntegration,
+      [`${basePath}/public/{proxy+}`]: publicIntegration,
+      [`${basePath}/{proxy+}`]: wildcardIntegration,
+      [basePath]: defaultIntegration,
+    };
   }
 
   attach(attachable: Record<string, Attachable>) {

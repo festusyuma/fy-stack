@@ -1,8 +1,12 @@
 import { ApiResource, type Attachable } from '@fy-stack/types';
-import { CorsHttpMethod, HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
-import { Construct } from "constructs";
+import {
+  CorsHttpMethod,
+  HttpApi,
+  HttpMethod,
+} from 'aws-cdk-lib/aws-apigatewayv2';
+import { Construct } from 'constructs';
 
-import { ApiGatewayConstructProps } from "./types";
+import { ApiGatewayConstructProps } from './types';
 
 /**
  * ApiGatewayConstruct is a construct class for creating an API Gateway with defined routes and integrations.
@@ -49,6 +53,7 @@ export class ApiGatewayConstruct extends Construct implements Attachable {
         allowOrigins: ['*'],
         allowMethods: [CorsHttpMethod.ANY],
       },
+      defaultIntegration,
     });
 
     for (const i in additionalIntegrations) {
@@ -62,7 +67,7 @@ export class ApiGatewayConstruct extends Construct implements Attachable {
 
   attachable(): Record<string, string> {
     return {
-      domain: this.api.apiEndpoint
-    }
+      domain: this.api.apiEndpoint,
+    };
   }
 }
