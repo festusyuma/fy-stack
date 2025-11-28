@@ -1,7 +1,8 @@
+import path from 'node:path';
+
 import { HttpUrlIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Function } from 'aws-cdk-lib/aws-lambda';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import path from 'node:path';
 
 export function lambdaApi(func: Function, basePath: string) {
   const strippedPath = basePath.replace(/^\/+|\/+$/g, '');
