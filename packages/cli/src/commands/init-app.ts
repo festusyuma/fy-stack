@@ -7,6 +7,7 @@ import {
   CreateOpenIDConnectProviderCommand,
   CreateRoleCommand,
   GetOpenIDConnectProviderCommand,
+  GetRoleCommand,
   GetUserPolicyCommand,
   IAMClient,
   ListAttachedGroupPoliciesCommand,
@@ -66,12 +67,10 @@ export async function initApp(props: InitAppProps) {
 
   if (props.githubRepo) {
     const githubFolderPath = path.join(workingDir, '.github/workflows/');
-    if (!fs.existsSync(githubFolderPath))
-      fs.mkdirSync(githubFolderPath, { recursive: true });
 
-    const deployYamlPath = path.join(githubFolderPath, 'fy-stack.deploy.yml');
-    if (fs.existsSync(deployYamlPath))
-      throw new Error('fy-stack.deploy.yml already exists');
+    if (!fs.existsSync(githubFolderPath)) {
+      fs.mkdirSync(githubFolderPath, { recursive: true });
+    }
 
     const existingRes = await iamClient.send(
       new ListOpenIDConnectProvidersCommand()
@@ -102,48 +101,69 @@ export async function initApp(props: InitAppProps) {
         })
       );
 
-      if (!idProviderRes.OpenIDConnectProviderArn)
-        throw new Error('unable to Github open id provider');
       idProviderArn = idProviderRes.OpenIDConnectProviderArn;
     }
 
-    const roleRes = await iamClient.send(
-      new CreateRoleCommand({
-        RoleName: `${props.app}GithubRole`,
-        AssumeRolePolicyDocument: JSON.stringify({
-          Version: '2012-10-17',
-          Statement: [
-            {
-              Effect: 'Allow',
-              Principal: { Federated: idProviderArn },
-              Action: 'sts:AssumeRoleWithWebIdentity',
-              Condition: {
-                StringEquals: {
-                  'token.actions.githubusercontent.com:aud':
-                    'sts.amazonaws.com',
-                },
-                StringLike: {
-                  'token.actions.githubusercontent.com:sub': `repo:${props.githubRepo}:*`,
+    if (!idProviderArn) {
+      throw new Error('unable to create Github OpenID provider');
+    }
+
+    const roleName = `${props.app}GithubRole`;
+    let roleArn: string | undefined;
+
+    try {
+      const existingRole = await iamClient.send(
+        new GetRoleCommand({ RoleName: roleName })
+      );
+
+      roleArn = existingRole.Role?.Arn;
+    } catch {
+      /** empty */
+    }
+
+    if (!roleArn) {
+      const roleRes = await iamClient.send(
+        new CreateRoleCommand({
+          RoleName: roleName,
+          AssumeRolePolicyDocument: JSON.stringify({
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Principal: { Federated: idProviderArn },
+                Action: 'sts:AssumeRoleWithWebIdentity',
+                Condition: {
+                  StringEquals: {
+                    'token.actions.githubusercontent.com:aud':
+                      'sts.amazonaws.com',
+                  },
+                  StringLike: {
+                    'token.actions.githubusercontent.com:sub': `repo:${props.githubRepo}:*`,
+                  },
                 },
               },
-            },
-          ],
-        }),
-      })
-    );
+            ],
+          }),
+        })
+      );
 
-    if (!roleRes.Role?.Arn || !roleRes.Role.RoleName)
+      roleArn = roleRes.Role?.Arn;
+    }
+
+    if (!roleArn) {
       throw new Error('unable to Github role');
-    const roleName = roleRes.Role.RoleName;
+    }
 
     if (isRoot) {
       await iamClient.send(
         new AttachRolePolicyCommand({
           PolicyArn: 'arn:aws:iam::aws:policy/AdministratorAccess',
-          RoleName: roleRes.Role.RoleName,
+          RoleName: roleName,
         })
       );
     } else {
+      // clone policies from logged in aws user to openid user
+
       // attach managed polices
       const attachedPolices = await iamClient.send(
         new ListAttachedUserPoliciesCommand({
@@ -174,7 +194,7 @@ export async function initApp(props: InitAppProps) {
           new PutRolePolicyCommand({
             PolicyName: policyName,
             PolicyDocument: decodeURIComponent(policyDocument.PolicyDocument),
-            RoleName: roleRes.Role.RoleName,
+            RoleName: roleName,
           })
         );
       }
@@ -215,7 +235,7 @@ export async function initApp(props: InitAppProps) {
             new PutRolePolicyCommand({
               PolicyName: policyName,
               PolicyDocument: decodeURIComponent(policyDocument.PolicyDocument),
-              RoleName: roleRes.Role.RoleName,
+              RoleName: roleName,
             })
           );
         }
@@ -224,10 +244,14 @@ export async function initApp(props: InitAppProps) {
 
     const yamlFile = getYAMLFile({
       ...props,
-      roleArn: roleRes.Role.Arn,
+      roleArn,
       region: await stsClient.config.region(),
     });
-    fs.writeFileSync(deployYamlPath, yamlFile);
+
+    const deployYamlPath = path.join(githubFolderPath, 'fy-stack.deploy.yml');
+    if (!fs.existsSync(deployYamlPath)) {
+      fs.writeFileSync(deployYamlPath, yamlFile);
+    }
   }
 
   /* Configure image CDN cache policy */
@@ -315,15 +339,15 @@ export async function initApp(props: InitAppProps) {
     ...packageJsonFile['devDependencies'],
     'aws-cdk': packageJsonFile.devDependencies?.['aws-cdk'] ?? '^2.1016.1',
     'aws-cdk-lib':
-      packageJsonFile.devDependencies?.['aws-cdk-lib'] ?? '^2.198.0',
+      packageJsonFile.devDependencies?.['aws-cdk-lib'] ?? '^2.229.1',
     '@aws-sdk/client-sts':
       packageJsonFile.devDependencies?.['@aws-sdk/client-sts'] ?? '^3.799.0',
-    constructs: packageJsonFile.devDependencies?.['constructs'] ?? '^10.4.2',
+    constructs: packageJsonFile.devDependencies?.['constructs'] ?? '^10.4.3',
     '@fy-stack/fullstack-construct':
       packageJsonFile.devDependencies?.['@fy-stack/fullstack-construct'] ??
-      '^0.0.146',
+      '^0.0.147',
     '@fy-stack/types':
-      packageJsonFile.devDependencies?.['@fy-stack/types'] ?? '^0.0.146',
+      packageJsonFile.devDependencies?.['@fy-stack/types'] ?? '^0.0.147',
   };
 
   const domain: string | undefined = props.domainName

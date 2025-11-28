@@ -8,7 +8,8 @@ type GetInfraFileParams = {
 export function getInfra(params: GetInfraFileParams) {
   const infraFile = `#!/usr/bin/env node
 const cdk = require("aws-cdk-lib");
-const { FullStackConstruct, AppType } = require("@fy-stack/fullstack-construct");
+const { FullStackConstruct } = require("@fy-stack/fullstack-construct");
+const { AppType } = require("@fy-stack/types");
 const { STSClient, GetCallerIdentityCommand } = require('@aws-sdk/client-sts');
 
 const env = {
@@ -36,7 +37,12 @@ class AppStack extends cdk.Stack {
       name: \${appName},
       ownerArn: props.ownerArn,
       storage: { retainOnDelete: false },
-      apps: {}
+      lambda: {
+        demo: {
+          type: AppType.NODE_APP,
+          output: './dist'
+        }
+      }
     });
   }
 }
