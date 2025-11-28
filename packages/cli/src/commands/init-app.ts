@@ -2,6 +2,14 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import {
+  CachePolicy,
+  CachePolicyConfig,
+  CloudFrontClient,
+  CreateCachePolicyCommand,
+  GetCachePolicyCommand,
+  UpdateCachePolicyCommand,
+} from '@aws-sdk/client-cloudfront';
+import {
   type AttachedPolicy,
   AttachRolePolicyCommand,
   CreateOpenIDConnectProviderCommand,
@@ -19,18 +27,10 @@ import {
   PutRolePolicyCommand,
 } from '@aws-sdk/client-iam';
 import {
-  SSMClient,
   GetParameterCommand,
   PutParameterCommand,
+  SSMClient,
 } from '@aws-sdk/client-ssm';
-import {
-  CachePolicy,
-  CachePolicyConfig,
-  CloudFrontClient,
-  CreateCachePolicyCommand,
-  GetCachePolicyCommand,
-  UpdateCachePolicyCommand,
-} from '@aws-sdk/client-cloudfront';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 
 import { getInfra } from './assets/get-infra.js';

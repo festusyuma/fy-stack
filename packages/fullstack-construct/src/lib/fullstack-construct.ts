@@ -25,7 +25,7 @@ import { AppAttachment, FullStackConstructProps } from './types';
  *
  */
 export class FullStackConstruct extends Construct {
-  public vpc: ec2.IVpc;
+  public vpc?: ec2.IVpc;
   public owner?: iam.IUser | iam.IRole;
   public auth?: AuthConstruct;
   public storage?: StorageConstruct;
@@ -39,7 +39,11 @@ export class FullStackConstruct extends Construct {
   public api?: ApiGatewayConstruct;
   public secret: SecretsConstruct;
 
-  constructor(scope: Construct, id: string, props: FullStackConstructProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    private props: FullStackConstructProps
+  ) {
     super(scope, id);
 
     this.owner = this.ownerFromArn(props.ownerArn);
@@ -49,12 +53,6 @@ export class FullStackConstruct extends Construct {
       retention: RetentionDays.ONE_WEEK,
       removalPolicy: RemovalPolicy.DESTROY,
     });
-
-    this.vpc = ec2.Vpc.fromLookup(
-      this,
-      'VPC',
-      props.vpcId ? { vpcId: props.vpcId } : { isDefault: true }
-    );
 
     if (props.auth) {
       this.auth = new AuthConstruct(this, 'AuthConstruct', {
@@ -74,13 +72,13 @@ export class FullStackConstruct extends Construct {
     if (props.database) {
       this.database = new DatabaseConstruct(this, 'DatabaseConstruct', {
         ...props.database,
-        vpcId: this.vpc.vpcId,
+        vpcId: this.getVpc().vpcId,
       });
     }
 
     if (props.ecs) {
       this.ecs = new EcsConstruct(this, 'EcsConstruct', {
-        vpc: this.vpc,
+        vpc: this.getVpc(),
         environmentPath: path.join('/', props.name, '/', props.environment),
         environment: props.environment,
         logGroup,
@@ -90,7 +88,7 @@ export class FullStackConstruct extends Construct {
 
     if (props.lambda) {
       this.lambda = new LambdaConstruct(this, 'LambdaConstruct', {
-        vpc: this.vpc,
+        vpc: this.getVpc.bind(this),
         apps: props.lambda,
         logGroup,
       });
@@ -263,7 +261,19 @@ export class FullStackConstruct extends Construct {
     }
   }
 
-  fromAttachments(attach: Attach, attachment?: AppAttachment) {
+  private getVpc() {
+    if (this.vpc) return this.vpc;
+
+    this.vpc = ec2.Vpc.fromLookup(
+      this,
+      'VPC',
+      this.props.vpcId ? { vpcId: this.props.vpcId } : { isDefault: true }
+    );
+
+    return this.vpc;
+  }
+
+  private fromAttachments(attach: Attach, attachment?: AppAttachment) {
     const builtAttachment = Object.entries(attachment ?? {})
       .map(([key]) => [key, this[key as keyof this]])
       .filter((v) => !!v && !!v[1]);
@@ -273,7 +283,7 @@ export class FullStackConstruct extends Construct {
     }
   }
 
-  fromGrants(grant: Grant, grants?: AppGrant[]) {
+  private fromGrants(grant: Grant, grants?: AppGrant[]) {
     const builtGrants =
       (grants
         ?.map((val) => this[val as keyof this])
@@ -284,7 +294,7 @@ export class FullStackConstruct extends Construct {
     }
   }
 
-  ownerFromArn(ownerArn?: string) {
+  private ownerFromArn(ownerArn?: string) {
     if (!ownerArn) return;
 
     const [arn] = ownerArn.split('/');

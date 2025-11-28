@@ -12,7 +12,7 @@ import type { ILogGroup } from 'aws-cdk-lib/aws-logs';
 import type { Queue, QueueProps } from 'aws-cdk-lib/aws-sqs';
 
 export type LambdaConstructProps = {
-  vpc?: IVpc;
+  vpc?: IVpc | (() => IVpc);
   apps: Record<string, App>;
   logGroup: ILogGroup;
 };
@@ -42,5 +42,5 @@ export type AppProperties<BuildParams = Record<string, unknown>> = {
   timeout?: number;
   buildParams: BuildParams & Partial<FunctionProps>;
   output: string;
-  vpc?: IVpc;
+  vpc?: IVpc | (() => IVpc);
 };
