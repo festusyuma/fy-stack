@@ -92,7 +92,8 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       this.static,
       serverOrigin,
       path,
-      this.files
+      this.files,
+      true
     );
   }
 

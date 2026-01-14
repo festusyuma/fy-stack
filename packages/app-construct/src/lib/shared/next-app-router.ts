@@ -58,7 +58,8 @@ export function cloudfrontBehaviours(
   staticBucket: s3.Bucket,
   serverOrigin: cloudfront.IOrigin,
   basePath: string,
-  files: AppFile
+  files: AppFile,
+  isLambda = false
 ) {
   if (basePath) {
     const strippedBasePath = basePath.replace(/^\/+|\/+$/g, '');
@@ -107,7 +108,9 @@ export function cloudfrontBehaviours(
     allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
     compress: true,
     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-    originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
+    originRequestPolicy: isLambda
+      ? cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER
+      : cloudfront.OriginRequestPolicy.ALL_VIEWER,
     responseHeadersPolicy:
       cloudfront.ResponseHeadersPolicy
         .CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,

@@ -22,6 +22,10 @@ export function taskDefinitionImage(id: string, props: Props) {
     image: ecs.ContainerImage.fromAsset(path.join(props.output), {
       platform: ecrAssets.Platform.LINUX_AMD64,
       ...(image ?? {}),
+      buildArgs: {
+        PORT: props.port.toString(),
+        ...(image?.buildArgs ?? {}),
+      },
     }),
     logging: new ecs.AwsLogDriver({
       streamPrefix: id,
