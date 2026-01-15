@@ -7,7 +7,10 @@
     "tslib": "^2.3.0",
     "zod": "^3.24.1"
   },
-  "peerDependencies": {},
+  "peerDependencies": {
+    "aws-cdk-lib": "^2.235.0",
+    "constructs": "^10.4.4"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "typings": "./dist/index.d.ts",

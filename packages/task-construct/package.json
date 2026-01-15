@@ -5,7 +5,9 @@
     "@fy-stack/types": "0.0.147-alpha.303",
     "tslib": "^2.3.0"
   },
-  "peerDependencies": {},
+  "peerDependencies": {
+    "aws-cdk-lib": "^2.235.0"
+  },
   "type": "commonjs",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
