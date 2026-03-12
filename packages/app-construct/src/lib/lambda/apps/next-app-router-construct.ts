@@ -42,6 +42,10 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
   ) {
     super(scope, id);
 
+    if (!('output' in props)) {
+      throw new Error('Output is required');
+    }
+
     const region = cdk.Stack.of(this).region;
     const deployment = staticDeployment(this, props.output);
 
@@ -66,7 +70,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
 
     fs.writeFileSync(path.join(serverOutput, 'run.sh'), cmd);
 
-    const defaultProps = getDefaultLambda(this, props);
+    const defaultProps = getDefaultLambda(props);
 
     this.function = new lambda.Function(this, `AppFunction`, {
       ...defaultProps,
@@ -109,31 +113,57 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       invokeMode: InvokeMode.RESPONSE_STREAM,
     });
 
-    if (strippedBasePath) {
-      new s3Deploy.BucketDeployment(
+    if (this.files.staticFiles) {
+      const staticFiles = s3Deploy.Source.bucket(
+        this.static,
+        this.files.staticFiles.key
+      );
+
+      const deployment = new s3Deploy.BucketDeployment(
         this,
         `${strippedBasePath}StaticDeployment`,
         {
           destinationBucket: this.static,
-          sources: [this.files.staticFiles],
-          destinationKeyPrefix: `${strippedBasePath}/_next/static/`,
+          prune: false,
+          sources: [staticFiles],
+          destinationKeyPrefix: strippedBasePath
+            ? `${strippedBasePath}/_next/static/`
+            : '_next/static/',
           retainOnDelete: false,
         }
       );
 
-      new s3Deploy.BucketDeployment(
+      if (this.files.staticFiles.deployment) {
+        deployment.node.addDependency(this.files.staticFiles.deployment);
+      }
+    }
+
+    if (this.files.publicFiles) {
+      const publicFiles = s3Deploy.Source.bucket(
+        this.static,
+        this.files.publicFiles.key
+      );
+
+      const deployment = new s3Deploy.BucketDeployment(
         this,
         `${strippedBasePath}PublicDeployment`,
         {
           destinationBucket: this.static,
-          sources: [this.files.publicFiles],
-          destinationKeyPrefix: `${strippedBasePath}/`,
+          prune: false,
+          sources: [publicFiles],
+          destinationKeyPrefix: strippedBasePath
+            ? `${strippedBasePath}/`
+            : undefined,
           retainOnDelete: false,
         }
       );
 
-      this.function.addEnvironment('BASE_PATH', basePath);
+      if (this.files.publicFiles.deployment) {
+        deployment.node.addDependency(this.files.publicFiles.deployment);
+      }
     }
+
+    if (strippedBasePath) this.function.addEnvironment('BASE_PATH', basePath);
 
     const imageIntegration = new HttpUrlIntegration(
       'AppImageIntegration',

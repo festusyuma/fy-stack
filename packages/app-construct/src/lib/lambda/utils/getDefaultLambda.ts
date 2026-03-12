@@ -1,13 +1,9 @@
 import { Duration } from 'aws-cdk-lib';
 import { FunctionProps, LoggingFormat } from 'aws-cdk-lib/aws-lambda';
-import type { Construct } from 'constructs';
 
 import { AppProperties } from '../types';
 
-export function getDefaultLambda(
-  scope: Construct,
-  props: AppProperties<unknown>
-) {
+export function getDefaultLambda(props: AppProperties<unknown>) {
   let params: Partial<FunctionProps> = {
     memorySize: 512,
     timeout: Duration.seconds(props.timeout ?? 30),

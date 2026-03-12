@@ -1,14 +1,13 @@
 {
   "name": "@fy-stack/app-construct",
-  "version": "0.0.147-alpha.304",
+  "version": "0.0.147-alpha.3064",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "@fy-stack/types": "0.0.147-alpha.304",
+    "@fy-stack/types": "0.0.147-alpha.3064",
     "tslib": "^2.3.0",
-    "zod": "^3.24.1"
+    "zod": "^4.3.6"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.235.0",
     "constructs": "^10.4.4"
   },
   "main": "./dist/index.js",

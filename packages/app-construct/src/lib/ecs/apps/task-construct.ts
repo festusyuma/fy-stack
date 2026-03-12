@@ -5,7 +5,6 @@ import {
   Grant,
   Grantable,
 } from '@fy-stack/types';
-import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as pipes from 'aws-cdk-lib/aws-pipes';
@@ -15,6 +14,7 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
 import { paramsFromAttachable } from '../../util/params-from-attachable';
+import { taskDefinitionImage } from '../shared/taskDefinitionImage';
 import { TaskConstructsProps } from '../types';
 
 export class TaskConstruct
@@ -30,7 +30,7 @@ export class TaskConstruct
   ) {
     super(scope, id);
 
-    const { container, output, ...definitionProps } = props;
+    const { definition, cluster, taskName, vpc, ...containerProps } = props;
 
     this.definition = new ecs.FargateTaskDefinition(this, 'Task', {
       cpu: 256,
@@ -38,24 +38,14 @@ export class TaskConstruct
       runtimePlatform: {
         cpuArchitecture: ecs.CpuArchitecture.X86_64,
       },
-      ...definitionProps,
+      ...props.definition,
     });
 
-    if (container) {
-      const { image: imageProps, logDuration, ...containerProps } = container;
-
-      this.definition.addContainer('DefaultImage', {
-        image: ecs.ContainerImage.fromAsset(output, {
-          platform: ecrAssets.Platform.LINUX_AMD64,
-          ...imageProps,
-        }),
-        logging: new ecs.AwsLogDriver({
-          streamPrefix: `${props.taskName}TaskContainer`,
-          logGroup: props.logGroup,
-        }),
-        ...containerProps,
-      });
-    }
+    taskDefinitionImage(this, 'DefaultImage', {
+      port: 8080,
+      taskDefinition: this.definition,
+      ...containerProps,
+    });
   }
 
   subscription(

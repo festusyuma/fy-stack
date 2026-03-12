@@ -4,11 +4,13 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 
 import {
   AppFile,
   cloudfrontBehaviours,
+  filesFromSSm,
   staticDeployment,
 } from '../../shared/next-app-router';
 import { paramsFromAttachable } from '../../util/params-from-attachable';
@@ -21,16 +23,32 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
   public container: ecs.ContainerDefinition;
   public queue: sqs.Queue | undefined;
 
-  private readonly static: s3.Bucket;
+  private readonly static: s3.IBucket;
   private readonly files: AppFile;
 
   constructor(scope: Construct, id: string, private props: NextAppRouterProps) {
     super(scope, id);
 
-    const deployment = staticDeployment(this, props.output);
-    this.static = deployment.staticBucket;
-    this.files = deployment.files;
-    this.container = taskDefinitionImage(`${props.appName}AppContainer`, props);
+    if ('output' in props) {
+      const deployment = staticDeployment(this, props.output);
+      this.static = deployment.staticBucket;
+      this.files = deployment.files;
+    } else {
+      const repository = ssm.StringParameter.fromStringParameterName(
+        scope,
+        'Repository',
+        `/${props.reference}/repository`
+      ).stringValue;
+
+      this.static = s3.Bucket.fromBucketName(this, 'StaticBucket', repository);
+      this.files = filesFromSSm(this, props.reference);
+    }
+
+    this.container = taskDefinitionImage(
+      this,
+      `${props.appName}AppContainer`,
+      props
+    );
   }
 
   cloudfront(path: string): Record<string, cloudfront.BehaviorOptions> {

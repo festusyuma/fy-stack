@@ -11,7 +11,7 @@ import type {
   TaskDefinition,
 } from 'aws-cdk-lib/aws-ecs';
 import type { ApplicationLoadBalancerProps } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
-import type { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
+import type { LogGroup } from 'aws-cdk-lib/aws-logs';
 
 export type EcsConstructProps = {
   logGroup: LogGroup;
@@ -47,31 +47,32 @@ export type EcsConstructProps = {
   tasks?: Record<string, TaskApp>;
 };
 
+export type AppSource =
+  | {
+      output: string;
+      container?: Omit<ContainerDefinitionOptions, 'image' | 'logging'> & {
+        image: AssetImageProps;
+      };
+    }
+  | {
+      reference: string;
+      container?: Omit<ContainerDefinitionOptions, 'image' | 'logging'>;
+    };
+
 export type ServerApp = {
   type: typeof AppType.NEXT_APP_ROUTER | typeof AppType.IMAGE_APP;
-  /** Directory of build output to be deployed */
-  output: string;
   env?: Record<string, string>;
   /** Additional parameters that may be required, this varies based on type */
   buildParams?: Record<string, unknown>;
   port: number;
-  container?: Omit<ContainerDefinitionOptions, 'image' | 'logging'> & {
-    image: AssetImageProps;
-    logDuration?: RetentionDays;
-  };
-};
+} & AppSource;
 
 export type TaskApp = {
   type: typeof AppType.IMAGE_APP;
-  /** Directory of build output to be deployed */
-  output: string;
   env?: Record<string, string>;
   buildParams?: Record<string, unknown>;
-  container?: Omit<ContainerDefinitionOptions, 'image' | 'logging'> & {
-    image: AssetImageProps;
-    logDuration?: RetentionDays;
-  };
-};
+  definition?: FargateTaskDefinitionProps;
+} & AppSource;
 
 export type AppProperties<BuildParams = Record<string, unknown>> = {
   appName: string;
@@ -87,25 +88,15 @@ export type AppProperties<BuildParams = Record<string, unknown>> = {
     healthPath?: string
   ) => { basePath: string; origin: LoadBalancerV2Origin };
   port: number;
-  output: string;
-  container?: Omit<ContainerDefinitionOptions, 'image' | 'logging'> & {
-    image: AssetImageProps;
-    logDuration?: RetentionDays;
-  };
-};
+} & AppSource;
 
-export type TaskConstructsProps = FargateTaskDefinitionProps & {
+export type TaskConstructsProps = {
   vpc: IVpc;
   logGroup: LogGroup;
   taskName: string;
   cluster: Cluster;
   env?: Record<string, string>;
-  /** Directory of build output to be deployed */
-  output: string;
-  container?: Omit<ContainerDefinitionOptions, 'image' | 'logging'> & {
-    image: AssetImageProps;
-    logDuration?: RetentionDays;
-  };
-};
+  definition?: FargateTaskDefinitionProps;
+} & AppSource;
 
 export interface AppConstruct extends Attach, CDNResource, ApiResource {}

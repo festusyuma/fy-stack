@@ -4,5 +4,7 @@ export { LambdaConstruct } from './lib/lambda/lambda-construct';
 export type { LambdaConstructProps } from './lib/lambda/types';
 export { lambdaAttach } from './lib/lambda/utils/lambda-attach';
 export { lambdaGrant } from './lib/lambda/utils/lambda-grant';
+export { ImageAppContainer } from './lib/standalone/image-app-container';
+export { NextAppRouterContainer } from './lib/standalone/next-app-router-container';
 export { StaticConstruct } from './lib/static/static-construct';
 export type { StaticConstructProps } from './lib/static/types';

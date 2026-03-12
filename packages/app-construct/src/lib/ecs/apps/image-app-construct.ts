@@ -24,7 +24,11 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
     private props: AppProperties<unknown>
   ) {
     super(scope, id);
-    this.container = taskDefinitionImage(`${props.appName}AppContainer`, props);
+    this.container = taskDefinitionImage(
+      this,
+      `${props.appName}AppContainer`,
+      props
+    );
   }
 
   attach(attachable: Record<string, Attachable>): void {

@@ -31,6 +31,10 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
   ) {
     super(scope, id);
 
+    if (!('output' in props)) {
+      throw new Error('Output is required');
+    }
+
     const region = cdk.Stack.of(this).region;
     const environment = {
       AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
@@ -49,7 +53,7 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
     const { cmd, ...functionProps } = props.buildParams;
     fs.writeFileSync(path.join(props.output, 'run.sh'), cmd);
 
-    const defaultProps = getDefaultLambda(this, props);
+    const defaultProps = getDefaultLambda(props);
 
     this.function = new lambda.Function(this, `AppFunction`, {
       ...defaultProps,

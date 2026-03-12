@@ -10,6 +10,7 @@ import {
   ViewerProtocolPolicy,
 } from 'aws-cdk-lib/aws-cloudfront';
 import { FunctionUrlOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as ecr from 'aws-cdk-lib/aws-ecr';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import {
   Code,
@@ -28,6 +29,7 @@ import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 import { z } from 'zod';
 
+import { containerParamsFromSSM } from '../../shared/container';
 import { AppConstruct, AppProperties } from '../types';
 import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaApi } from '../utils/lambda-api';
@@ -59,12 +61,31 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
 
     const { container, ...functionProps } = props.buildParams;
 
-    this.function = new Function(this, `AppFunction`, {
-      ...getDefaultLambda(this, props),
-      code: Code.fromAssetImage(props.output, {
+    let code;
+
+    if ('reference' in props) {
+      const params = containerParamsFromSSM(this, props.reference);
+
+      const repository = ecr.Repository.fromRepositoryName(
+        this,
+        'Repository',
+        params.repository
+      );
+
+      code = Code.fromEcrImage(repository, {
+        tagOrDigest: params.tag,
+        cmd: container?.cmd,
+      });
+    } else {
+      code = Code.fromAssetImage(props.output, {
         platform: Platform.LINUX_AMD64,
         ...container,
-      }),
+      });
+    }
+
+    this.function = new Function(this, `AppFunction`, {
+      ...getDefaultLambda(props),
+      code,
       handler: Handler.FROM_IMAGE,
       runtime: Runtime.FROM_IMAGE,
       ...functionProps,
@@ -81,9 +102,7 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
       });
 
       this.function.addEventSource(
-        new SqsEventSource(this.queue, {
-          batchSize,
-        })
+        new SqsEventSource(this.queue, { batchSize })
       );
     }
   }

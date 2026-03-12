@@ -35,12 +35,13 @@ export type App = {
     | typeof AppType.NODE_API;
 } & Omit<AppProperties, 'vpc' | 'logGroup'>;
 
+export type AppResource = { output: string } | { reference: string };
+
 export type AppProperties<BuildParams = Record<string, unknown>> = {
   logGroup: ILogGroup;
   queue?: { batchSize?: number } & Partial<QueueProps>;
   env?: Record<string, string>;
   timeout?: number;
   buildParams: BuildParams & Partial<FunctionProps>;
-  output: string;
   vpc?: IVpc | (() => IVpc);
-};
+} & AppResource;

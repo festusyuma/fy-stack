@@ -32,8 +32,12 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
   ) {
     super(scope, id);
 
+    if (!('output' in props)) {
+      throw new Error('Output is required');
+    }
+
     this.function = new lambda.Function(this, `AppFunction`, {
-      ...getDefaultLambda(this, props),
+      ...getDefaultLambda(props),
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: props.buildParams.handler ?? 'index.handler',
       code: lambda.Code.fromAsset(props.output),
