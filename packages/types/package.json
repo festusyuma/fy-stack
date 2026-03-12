@@ -1,13 +1,11 @@
 {
   "name": "@fy-stack/types",
-  "version": "0.0.147-alpha.304",
+  "version": "0.0.147-alpha.3064",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
     "tslib": "^2.3.0"
   },
-  "peerDependencies": {
-    "aws-cdk-lib": "^2.235.0"
-  },
+  "peerDependencies": {},
   "type": "commonjs",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",

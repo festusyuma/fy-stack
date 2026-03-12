@@ -1,13 +1,12 @@
 {
   "name": "@fy-stack/storage-construct",
-  "version": "0.0.147-alpha.304",
+  "version": "0.0.147-alpha.3064",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "@fy-stack/types": "0.0.147-alpha.304",
+    "@fy-stack/types": "0.0.147-alpha.3064",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.235.0",
     "constructs": "^10.4.4"
   },
   "type": "commonjs",

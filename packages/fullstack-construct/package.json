@@ -1,21 +1,20 @@
 {
   "name": "@fy-stack/fullstack-construct",
-  "version": "0.0.147-alpha.304",
+  "version": "0.0.147-alpha.3064",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "@fy-stack/apigateway-construct": "0.0.147-alpha.304",
-    "@fy-stack/app-construct": "0.0.147-alpha.304",
-    "@fy-stack/auth-construct": "0.0.147-alpha.304",
-    "@fy-stack/cdn-construct": "0.0.147-alpha.304",
-    "@fy-stack/database-construct": "0.0.147-alpha.304",
-    "@fy-stack/event-construct": "0.0.147-alpha.304",
-    "@fy-stack/secret-construct": "0.0.147-alpha.304",
-    "@fy-stack/storage-construct": "0.0.147-alpha.304",
+    "@fy-stack/apigateway-construct": "0.0.147-alpha.3064",
+    "@fy-stack/app-construct": "0.0.147-alpha.3064",
+    "@fy-stack/auth-construct": "0.0.147-alpha.3064",
+    "@fy-stack/cdn-construct": "0.0.147-alpha.3064",
+    "@fy-stack/database-construct": "0.0.147-alpha.3064",
+    "@fy-stack/event-construct": "0.0.147-alpha.3064",
+    "@fy-stack/secret-construct": "0.0.147-alpha.3064",
+    "@fy-stack/storage-construct": "0.0.147-alpha.3064",
     "tslib": "^2.3.0",
-    "@fy-stack/types": "0.0.147-alpha.304"
+    "@fy-stack/types": "0.0.147-alpha.3064"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.235.0",
     "constructs": "^10.4.4"
   },
   "type": "commonjs",
