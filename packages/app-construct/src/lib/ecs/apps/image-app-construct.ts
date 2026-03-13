@@ -11,7 +11,7 @@ import {
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { Construct } from 'constructs';
 
-import { paramsFromAttachable } from '../../util/params-from-attachable';
+import { paramsFromAttachable } from '../../shared/params-from-attachable';
 import { taskDefinitionImage } from '../shared/taskDefinitionImage';
 import { AppConstruct, AppProperties } from '../types';
 

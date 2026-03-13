@@ -1,7 +1,7 @@
 import { Attachable } from '@fy-stack/types';
 import { Function } from 'aws-cdk-lib/aws-lambda';
 
-import { paramsFromAttachable } from '../../util/params-from-attachable';
+import { paramsFromAttachable } from '../../shared/params-from-attachable';
 
 export function lambdaAttach(func: Function, attachable: Record<string, Attachable>) {
   const params: Record<string, string> = {}

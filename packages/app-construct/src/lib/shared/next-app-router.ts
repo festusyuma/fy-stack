@@ -9,12 +9,18 @@ import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 
 export type AppFile = {
+  artifactBucket: s3.IBucket;
   staticFiles?: { deployment?: s3Deploy.BucketDeployment; key: string };
   publicFiles?: { deployment?: s3Deploy.BucketDeployment; key: string };
 };
 
 export function filesFromSSm(scope: Construct, reference: string) {
   return {
+    artifact: ssm.StringParameter.fromStringParameterName(
+      scope,
+      'ArtifactStorage',
+      `/${reference}/artifacts`
+    ).stringValue,
     publicFiles: {
       key: ssm.StringParameter.fromStringParameterName(
         scope,
@@ -32,23 +38,11 @@ export function filesFromSSm(scope: Construct, reference: string) {
   };
 }
 
-export function staticDeployment(app: Construct, output: string) {
-  const staticBucket = new s3.Bucket(app, `StaticBucket`, {
-    removalPolicy: cdk.RemovalPolicy.DESTROY,
-    autoDeleteObjects: true,
-    blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS_ONLY,
-    publicReadAccess: true,
-    websiteIndexDocument: 'index.html',
-    websiteErrorDocument: 'index.html',
-    cors: [
-      {
-        allowedHeaders: ['*'],
-        allowedOrigins: ['*'],
-        allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.HEAD],
-      },
-    ],
-  });
-
+export function staticDeployment(
+  app: Construct,
+  bucket: s3.IBucket,
+  output: string
+) {
   const staticFiles = s3Deploy.Source.asset(path.join(output, '/.next/static'));
   const publicFiles = s3Deploy.Source.asset(path.join(output, '/public'));
 
@@ -56,7 +50,7 @@ export function staticDeployment(app: Construct, output: string) {
     app,
     `StaticAssetDeployment`,
     {
-      destinationBucket: staticBucket,
+      destinationBucket: bucket,
       sources: [staticFiles],
       destinationKeyPrefix: 'assets/static',
       retainOnDelete: false,
@@ -68,10 +62,9 @@ export function staticDeployment(app: Construct, output: string) {
     app,
     `PublicAssetDeployment`,
     {
-      destinationBucket: staticBucket,
+      destinationBucket: bucket,
       sources: [publicFiles],
       destinationKeyPrefix: 'assets/public',
-      prune: false,
       retainOnDelete: false,
       extract: false,
     }
@@ -98,11 +91,11 @@ export function staticDeployment(app: Construct, output: string) {
     throw new Error('Failed to deploy static and public files');
   }
 
-  return { staticBucket, files };
+  return { files };
 }
 
 export function cloudfrontBehaviours(
-  app: Construct,
+  scope: Construct,
   staticBucket: s3.IBucket,
   serverOrigin: cloudfront.IOrigin,
   basePath: string,
@@ -111,42 +104,16 @@ export function cloudfrontBehaviours(
 ) {
   const strippedBasePath = basePath.replace(/^\/+|\/+$/g, '');
 
-  if (files.staticFiles) {
-    const staticFiles = s3Deploy.Source.bucket(
-      staticBucket,
-      files.staticFiles.key
-    );
-
-    const deployment = new s3Deploy.BucketDeployment(
-      app,
-      `${strippedBasePath}StaticDeployment`,
-      {
-        prune: false,
-        destinationBucket: staticBucket,
-        sources: [staticFiles],
-        destinationKeyPrefix: strippedBasePath
-          ? `${strippedBasePath}/_next/static/`
-          : '_next/static/',
-        retainOnDelete: false,
-      }
-    );
-
-    if (files.staticFiles.deployment) {
-      deployment.node.addDependency(files.staticFiles.deployment);
-    }
-  }
-
   if (files.publicFiles) {
     const publicFiles = s3Deploy.Source.bucket(
-      staticBucket,
+      files.artifactBucket,
       files.publicFiles.key
     );
 
     const deployment = new s3Deploy.BucketDeployment(
-      app,
+      scope,
       `${strippedBasePath}PublicDeployment`,
       {
-        prune: false,
         destinationBucket: staticBucket,
         sources: [publicFiles],
         destinationKeyPrefix: strippedBasePath
@@ -158,6 +125,30 @@ export function cloudfrontBehaviours(
 
     if (files.publicFiles.deployment) {
       deployment.node.addDependency(files.publicFiles.deployment);
+    }
+  }
+
+  if (files.staticFiles) {
+    const staticFiles = s3Deploy.Source.bucket(
+      files.artifactBucket,
+      files.staticFiles.key
+    );
+
+    const deployment = new s3Deploy.BucketDeployment(
+      scope,
+      `${strippedBasePath}StaticDeployment`,
+      {
+        destinationBucket: staticBucket,
+        sources: [staticFiles],
+        destinationKeyPrefix: strippedBasePath
+          ? `${strippedBasePath}/_next/static/`
+          : '_next/static/',
+        retainOnDelete: false,
+      }
+    );
+
+    if (files.staticFiles.deployment) {
+      deployment.node.addDependency(files.staticFiles.deployment);
     }
   }
 
@@ -173,13 +164,13 @@ export function cloudfrontBehaviours(
   };
 
   const imageCachePolicyID = ssm.StringParameter.fromStringParameterName(
-    app,
+    scope,
     'NextAppRouterImagePolicyArn',
     '/fy-stack/ImagePolicyID'
   );
 
   const imageCachePolicy = cloudfront.CachePolicy.fromCachePolicyId(
-    app,
+    scope,
     'ImagePolicy',
     imageCachePolicyID.stringValue
   );

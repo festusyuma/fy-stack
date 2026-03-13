@@ -1,10 +1,10 @@
 {
   "name": "@fy-stack/apigateway-construct",
-  "version": "0.0.147-alpha.3064",
+  "version": "0.0.147-alpha.3065",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
     "tslib": "^2.3.0",
-    "@fy-stack/types": "0.0.147-alpha.3064"
+    "@fy-stack/types": "0.0.147-alpha.3065"
   },
   "peerDependencies": {
     "constructs": "^10.4.4"

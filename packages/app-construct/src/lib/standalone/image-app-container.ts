@@ -5,9 +5,12 @@ import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as ecrDeployment from 'cdk-ecr-deployment';
 import { Construct } from 'constructs';
 
-import type { StandaloneContainer } from './types';
+import type { StandaloneApp } from './types';
+import type { DockerImageAssetOptions } from 'aws-cdk-lib/aws-ecr-assets';
 
-export type ImageAppProps = StandaloneContainer;
+export type ImageAppProps = StandaloneApp & {
+  container?: DockerImageAssetOptions;
+};
 
 export class ImageAppContainer extends Construct {
   constructor(scope: Construct, id: string, props: ImageAppProps) {

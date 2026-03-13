@@ -13,7 +13,7 @@ import * as snsSubscription from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
-import { paramsFromAttachable } from '../../util/params-from-attachable';
+import { paramsFromAttachable } from '../../shared/params-from-attachable';
 import { taskDefinitionImage } from '../shared/taskDefinitionImage';
 import { TaskConstructsProps } from '../types';
 

@@ -1,7 +1,4 @@
-import type { DockerImageAssetOptions } from 'aws-cdk-lib/aws-ecr-assets';
-
-export type StandaloneContainer = {
+export type StandaloneApp = {
   output: string;
   version: string;
-  container?: DockerImageAssetOptions;
 };

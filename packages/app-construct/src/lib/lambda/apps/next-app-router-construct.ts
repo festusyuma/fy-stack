@@ -25,6 +25,7 @@ import { AppConstruct, AppProperties } from '../types';
 import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
+import { publicBucket } from '../../shared/public-bucket';
 
 const BuildParamsSchema = z.object({ cmd: z.string() }).passthrough();
 
@@ -47,10 +48,15 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     }
 
     const region = cdk.Stack.of(this).region;
-    const deployment = staticDeployment(this, props.output);
 
-    this.static = deployment.staticBucket;
-    this.files = deployment.files;
+    this.static = publicBucket(this, 'StaticBucket');
+    const artifactBucket = new s3.Bucket(this, 'ArtifactStorage', {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
+
+    const deployment = staticDeployment(this, artifactBucket, props.output);
+    this.files = { artifactBucket, ...deployment.files };
 
     const webAdapterLayer = lambda.LayerVersion.fromLayerVersionArn(
       this,

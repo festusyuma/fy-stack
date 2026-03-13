@@ -4,7 +4,7 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
+import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 import {
@@ -13,9 +13,10 @@ import {
   filesFromSSm,
   staticDeployment,
 } from '../../shared/next-app-router';
-import { paramsFromAttachable } from '../../util/params-from-attachable';
+import { paramsFromAttachable } from '../../shared/params-from-attachable';
 import { taskDefinitionImage } from '../shared/taskDefinitionImage';
 import { AppConstruct, AppProperties } from '../types';
+import { publicBucket } from '../../shared/public-bucket';
 
 type NextAppRouterProps = AppProperties<unknown>;
 
@@ -29,19 +30,24 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
   constructor(scope: Construct, id: string, private props: NextAppRouterProps) {
     super(scope, id);
 
-    if ('output' in props) {
-      const deployment = staticDeployment(this, props.output);
-      this.static = deployment.staticBucket;
-      this.files = deployment.files;
-    } else {
-      const repository = ssm.StringParameter.fromStringParameterName(
-        scope,
-        'Repository',
-        `/${props.reference}/repository`
-      ).stringValue;
+    this.static = publicBucket(this, 'StaticBucket');
+    const artifactBucket = new s3.Bucket(this, 'ArtifactStorage', {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
 
-      this.static = s3.Bucket.fromBucketName(this, 'StaticBucket', repository);
-      this.files = filesFromSSm(this, props.reference);
+    if ('output' in props) {
+      const deployment = staticDeployment(this, artifactBucket, props.output);
+      this.files = { artifactBucket: artifactBucket, ...deployment.files };
+    } else {
+      const fileParams = filesFromSSm(this, props.reference);
+      const appArtifact = s3.Bucket.fromBucketName(
+        scope,
+        'AppArtifactStorage',
+        fileParams.artifact
+      );
+
+      this.files = { ...fileParams, artifactBucket: appArtifact };
     }
 
     this.container = taskDefinitionImage(
