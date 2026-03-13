@@ -1,14 +1,14 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
-import * as s3 from 'aws-cdk-lib/aws-s3';
+import type { DockerImageAssetOptions } from 'aws-cdk-lib/aws-ecr-assets';
 import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as ecrDeployment from 'cdk-ecr-deployment';
 import { Construct } from 'constructs';
 
 import { staticDeployment } from '../shared/next-app-router';
 import type { StandaloneApp } from './types';
-import type { DockerImageAssetOptions } from 'aws-cdk-lib/aws-ecr-assets';
 
 export type NextAppRouterProps = StandaloneApp & {
   container?: DockerImageAssetOptions;

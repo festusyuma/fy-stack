@@ -4,7 +4,8 @@ export type StaticConstructProps = {
   apps: Record<string, App>;
 };
 
-export interface AppConstruct extends CDNResource, ApiResource {}
+export interface AppConstruct extends CDNResource, ApiResource {
+}
 
 export type App = {
   type: typeof AppType.NEXT_PAGE_EXPORT | typeof AppType.STATIC_WEBSITE;
@@ -12,7 +13,9 @@ export type App = {
   buildParams?: Record<string, unknown>;
 };
 
-export type AppProperties<BuildParams = Record<string, unknown>> = {
+export type AppProperties<
+  BuildParams extends Record<string, unknown> = Partial<Record<string, unknown>>
+> = {
   buildParams: BuildParams;
   output: string;
 };

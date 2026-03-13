@@ -1,10 +1,10 @@
 import { Attachable } from '@fy-stack/types';
+import * as cdk from 'aws-cdk-lib';
 import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
-import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 import {
@@ -14,9 +14,9 @@ import {
   staticDeployment,
 } from '../../shared/next-app-router';
 import { paramsFromAttachable } from '../../shared/params-from-attachable';
+import { publicBucket } from '../../shared/public-bucket';
 import { taskDefinitionImage } from '../shared/taskDefinitionImage';
 import { AppConstruct, AppProperties } from '../types';
-import { publicBucket } from '../../shared/public-bucket';
 
 type NextAppRouterProps = AppProperties<unknown>;
 

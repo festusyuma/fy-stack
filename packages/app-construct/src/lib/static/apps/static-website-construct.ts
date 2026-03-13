@@ -13,7 +13,8 @@ const BuildParamsSchema = z
   .object({
     spa: z.boolean().optional(),
   })
-  .optional();
+  .optional()
+  .default({});
 
 export class StaticWebsiteConstruct extends Construct implements AppConstruct {
   private readonly static: s3.Bucket;
@@ -62,7 +63,10 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
     };
 
-    let staticPageBehaviour: cloudfront.BehaviorOptions = Object.assign({}, staticBehavior);
+    let staticPageBehaviour: cloudfront.BehaviorOptions = Object.assign(
+      {},
+      staticBehavior
+    );
 
     if (this.props.buildParams?.spa) {
       const spaRewriteFunction = new cloudfront.Function(this, 'SpaRewrite', {

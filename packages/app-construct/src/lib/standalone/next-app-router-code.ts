@@ -1,13 +1,14 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import * as cdk from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 
+import { codeDeployment } from '../shared/code-deployment';
 import { staticDeployment } from '../shared/next-app-router';
 import type { StandaloneApp } from './types';
-import { codeDeployment } from '../shared/code-deployment';
-import path from 'node:path';
-import fs from 'node:fs';
 
 export type NextAppRouterProps = StandaloneApp & {
   cmd: string;

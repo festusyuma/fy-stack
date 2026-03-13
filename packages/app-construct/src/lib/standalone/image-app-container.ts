@@ -1,12 +1,12 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
+import type { DockerImageAssetOptions } from 'aws-cdk-lib/aws-ecr-assets';
 import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as ecrDeployment from 'cdk-ecr-deployment';
 import { Construct } from 'constructs';
 
 import type { StandaloneApp } from './types';
-import type { DockerImageAssetOptions } from 'aws-cdk-lib/aws-ecr-assets';
 
 export type ImageAppProps = StandaloneApp & {
   container?: DockerImageAssetOptions;
