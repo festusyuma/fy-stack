@@ -2,7 +2,10 @@
   "name": "@fy-stack/source",
   "version": "0.0.146",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "version": "nx release version --git-commit=false --git-tag=false",
+    "publish": "npm publish --access public --workspaces"
+  },
   "private": true,
   "devDependencies": {
     "@eslint/js": "^9.8.0",
@@ -32,7 +35,10 @@
     "packages/*"
   ],
   "nx": {
-    "includedScripts": [],
+    "includedScripts": [
+      "version",
+      "publish"
+    ],
     "targets": {
       "local-registry": {
         "executor": "@nx/js:verdaccio",
