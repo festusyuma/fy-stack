@@ -3,10 +3,12 @@
   "version": "0.0.147-alpha.3065",
   "dependencies": {
     "@fy-stack/types": "0.0.147-alpha.3065",
-    "tslib": "^2.3.0",
-    "constructs": "10.5.1"
+    "tslib": "^2.3.0"
   },
-  "peerDependencies": {},
+  "peerDependencies": {
+    "aws-cdk-lib": "^2.243.0",
+    "constructs": "^10.5.1"
+  },
   "type": "commonjs",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
