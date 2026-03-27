@@ -29,24 +29,16 @@ import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 import { z } from 'zod';
 
-import { containerParamsFromSSM } from '../../shared/container';
+import { containerParamsFromSSM } from '../../shared/container-from-param';
 import { AppConstruct, AppProperties } from '../types';
 import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaApi } from '../utils/lambda-api';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
 
-const BuildParamsSchema = z
-  .object({
-    container: z
-      .object({
-        file: z.string().optional(),
-        cmd: z.string().array().optional(),
-      })
-      .passthrough()
-      .optional(),
-  })
-  .passthrough();
+const BuildParamsSchema = z.looseObject({
+  container: z.looseObject({ file: z.string().optional() }).optional(),
+});
 
 export class ImageAppConstruct extends Construct implements AppConstruct {
   public function: Function;
@@ -74,7 +66,7 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
 
       code = Code.fromEcrImage(repository, {
         tagOrDigest: params.tag,
-        cmd: container?.cmd,
+        cmd: params.cmd,
       });
     } else {
       code = Code.fromAssetImage(props.output, {

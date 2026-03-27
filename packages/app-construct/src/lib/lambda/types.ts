@@ -33,9 +33,12 @@ export type App = {
     | typeof AppType.NEXT_APP_ROUTER
     | typeof AppType.NODE_APP
     | typeof AppType.NODE_API;
-} & Omit<AppProperties, 'vpc' | 'logGroup'>;
+} & Omit<AppProperties, 'vpc' | 'logGroup'> &
+  AppResource;
 
-export type AppResource = { output: string } | { reference: string };
+export type AppResource =
+  | { output: string; cmd: string }
+  | { reference: string };
 
 export type AppProperties<BuildParams = Record<string, unknown>> = {
   logGroup: ILogGroup;

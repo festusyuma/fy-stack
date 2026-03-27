@@ -10,26 +10,17 @@ import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
-import { z } from 'zod';
 
 import { AppConstruct, AppProperties } from '../types';
 import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
 
-const BuildParamsSchema = z
-  .object({ handler: z.string().optional() })
-  .passthrough();
-
 export class NodeAppConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
 
-  constructor(
-    scope: Construct,
-    id: string,
-    props: AppProperties<z.infer<typeof BuildParamsSchema>>
-  ) {
+  constructor(scope: Construct, id: string, props: AppProperties) {
     super(scope, id);
 
     if (!('output' in props)) {
@@ -101,7 +92,7 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
     };
   }
 
-  static parse(params: unknown) {
-    return BuildParamsSchema.parse(params);
+  static parse<T>(params: T) {
+    return params;
   }
 }

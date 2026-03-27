@@ -5,7 +5,7 @@ import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import type { Construct } from 'constructs';
 
-import { containerParamsFromSSM } from '../../shared/container';
+import { containerParamsFromSSM } from '../../shared/container-from-param';
 import type { AppProperties, AppSource } from '../types';
 
 type Props = AppSource &

@@ -10,7 +10,6 @@ import * as lambdaEventSource from 'aws-cdk-lib/aws-lambda-event-sources';
 import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
-import { z } from 'zod';
 
 import { AppConstruct, AppProperties } from '../types';
 import { getDefaultLambda } from '../utils/getDefaultLambda';
@@ -18,17 +17,11 @@ import { lambdaApi } from '../utils/lambda-api';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
 
-const BuildParamsSchema = z.object({ cmd: z.string() }).passthrough();
-
 export class NodeApiConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
 
-  constructor(
-    scope: Construct,
-    id: string,
-    props: AppProperties<z.infer<typeof BuildParamsSchema>>
-  ) {
+  constructor(scope: Construct, id: string, props: AppProperties) {
     super(scope, id);
 
     if (!('output' in props)) {
@@ -50,8 +43,8 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
       ),
     ];
 
-    const { cmd, ...functionProps } = props.buildParams;
-    fs.writeFileSync(path.join(props.output, 'run.sh'), cmd);
+    const functionProps = props.buildParams;
+    fs.writeFileSync(path.join(props.output, 'run.sh'), props.cmd);
 
     const defaultProps = getDefaultLambda(props);
 
@@ -119,7 +112,7 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
     return lambdaApi(this.function, path);
   }
 
-  static parse(params: unknown) {
-    return BuildParamsSchema.parse(params);
+  static parse<T>(params: T) {
+    return params;
   }
 }

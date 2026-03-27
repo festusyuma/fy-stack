@@ -14,24 +14,24 @@ export type AppFile = {
   publicFiles?: { deployment?: s3Deploy.BucketDeployment; key: string };
 };
 
-export function filesFromSSm(scope: Construct, reference: string) {
+export function filesFromSSM(scope: Construct, reference: string) {
   return {
     artifact: ssm.StringParameter.fromStringParameterName(
       scope,
-      'ArtifactStorage',
+      'ArtifactStorageParam',
       `/${reference}/artifacts`
     ).stringValue,
     publicFiles: {
       key: ssm.StringParameter.fromStringParameterName(
         scope,
-        'PublicFiles',
+        'PublicFilesParam',
         `/${reference}/files/publicFiles/key`
       ).stringValue,
     },
     staticFiles: {
       key: ssm.StringParameter.fromStringParameterName(
         scope,
-        'StaticFiles',
+        'StaticFilesParam',
         `/${reference}/files/staticFiles/key`
       ).stringValue,
     },

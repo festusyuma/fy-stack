@@ -19,6 +19,7 @@ import { z } from 'zod';
 import {
   AppFile,
   cloudfrontBehaviours,
+  filesFromSSM,
   staticDeployment,
 } from '../../shared/next-app-router';
 import { publicBucket } from '../../shared/public-bucket';
@@ -26,8 +27,9 @@ import { AppConstruct, AppProperties } from '../types';
 import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
+import { codeFromSSM } from '../../shared/code-from-param';
 
-const BuildParamsSchema = z.object({ cmd: z.string() }).passthrough();
+const BuildParamsSchema = z.looseObject({ cmd: z.string().optional() });
 
 export class NextAppRouterConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
@@ -43,10 +45,6 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
   ) {
     super(scope, id);
 
-    if (!('output' in props)) {
-      throw new Error('Output is required');
-    }
-
     const region = cdk.Stack.of(this).region;
 
     this.static = publicBucket(this, 'StaticBucket');
@@ -54,9 +52,6 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
     });
-
-    const deployment = staticDeployment(this, artifactBucket, props.output);
-    this.files = { artifactBucket, ...deployment.files };
 
     const webAdapterLayer = lambda.LayerVersion.fromLayerVersionArn(
       this,
@@ -72,18 +67,42 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     };
 
     const { cmd, ...functionProps } = props.buildParams;
-    const serverOutput = path.join(props.output, '/.next/standalone');
-
-    fs.writeFileSync(path.join(serverOutput, 'run.sh'), cmd);
-
     const defaultProps = getDefaultLambda(props);
+
+    let handler;
+    let code;
+
+    if ('output' in props) {
+      const deployment = staticDeployment(this, artifactBucket, props.output);
+      this.files = { artifactBucket, ...deployment.files };
+      const serverOutput = path.join(props.output, '/.next/standalone');
+
+      if (!cmd) throw new Error('cmd is required when building from local');
+      fs.writeFileSync(path.join(serverOutput, 'run.sh'), cmd);
+
+      handler = 'run.sh';
+      code = lambda.Code.fromAsset(serverOutput);
+    } else {
+      const fileParams = filesFromSSM(this, props.reference);
+      const appArtifact = s3.Bucket.fromBucketName(
+        scope,
+        'AppArtifactStorage',
+        fileParams.artifact
+      );
+
+      this.files = { ...fileParams, artifactBucket: appArtifact };
+      const cmdParams = codeFromSSM(this, props.reference);
+
+      handler = cmdParams.cmd;
+      code = lambda.Code.fromBucketV2(appArtifact, cmdParams.code);
+    }
 
     this.function = new lambda.Function(this, `AppFunction`, {
       ...defaultProps,
       environment: Object.assign({}, defaultProps.environment, environment),
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'run.sh',
-      code: lambda.Code.fromAsset(serverOutput),
+      handler,
+      code,
       layers: [webAdapterLayer],
       ...functionProps,
     });
@@ -121,7 +140,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
 
     if (this.files.staticFiles) {
       const staticFiles = s3Deploy.Source.bucket(
-        this.static,
+        this.files.artifactBucket,
         this.files.staticFiles.key
       );
 
@@ -146,7 +165,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
 
     if (this.files.publicFiles) {
       const publicFiles = s3Deploy.Source.bucket(
-        this.static,
+        this.files.artifactBucket,
         this.files.publicFiles.key
       );
 

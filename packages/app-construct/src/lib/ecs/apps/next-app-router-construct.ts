@@ -10,7 +10,7 @@ import { Construct } from 'constructs';
 import {
   AppFile,
   cloudfrontBehaviours,
-  filesFromSSm,
+  filesFromSSM,
   staticDeployment,
 } from '../../shared/next-app-router';
 import { paramsFromAttachable } from '../../shared/params-from-attachable';
@@ -40,7 +40,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       const deployment = staticDeployment(this, artifactBucket, props.output);
       this.files = { artifactBucket: artifactBucket, ...deployment.files };
     } else {
-      const fileParams = filesFromSSm(this, props.reference);
+      const fileParams = filesFromSSM(this, props.reference);
       const appArtifact = s3.Bucket.fromBucketName(
         scope,
         'AppArtifactStorage',

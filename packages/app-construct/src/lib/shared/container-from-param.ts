@@ -13,5 +13,10 @@ export function containerParamsFromSSM(scope: Construct, reference: string) {
       'VersionNumber',
       `/${reference}/tag`
     ).stringValue,
+    cmd: ssm.StringListParameter.fromStringListParameterName(
+      scope,
+      'ImageCMD',
+      `/${reference}/cmd`
+    ).stringListValue,
   };
 }

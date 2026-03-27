@@ -52,7 +52,7 @@ export class NextAppRouterCode extends Construct {
       stringValue: code,
     });
 
-    new ssm.StringParameter(this, 'CodeFilesKeyParam', {
+    new ssm.StringParameter(this, 'CodeCMDParam', {
       parameterName: `/${stackName}/code/handler`,
       stringValue: 'run.sh',
     });

@@ -10,6 +10,7 @@ import type { StandaloneApp } from './types';
 
 export type ImageAppProps = StandaloneApp & {
   container?: DockerImageAssetOptions;
+  cmd: string[];
 };
 
 export class ImageAppContainer extends Construct {
@@ -39,6 +40,11 @@ export class ImageAppContainer extends Construct {
     new ssm.StringParameter(this, 'RepositoryParam', {
       parameterName: `/${stackName}/repository`,
       stringValue: repo.repositoryName,
+    });
+
+    new ssm.StringListParameter(this, 'ImageCMD', {
+      parameterName: `/${stackName}/cmd`,
+      stringListValue: props.cmd,
     });
 
     new ssm.StringParameter(this, 'TagParam', {

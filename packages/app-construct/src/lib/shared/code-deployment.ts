@@ -19,7 +19,7 @@ export function codeDeployment(
       destinationBucket: bucket,
       sources: [codeFiles],
       destinationKeyPrefix: codePrefix,
-      retainOnDelete: false,
+      retainOnDelete: true,
       extract: false,
     }
   );
