@@ -5,12 +5,14 @@ import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations
 import { BehaviorOptions } from 'aws-cdk-lib/aws-cloudfront';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
 import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
+import { codeFromSSM } from '../../shared/code-from-param';
 import { AppConstruct, AppProperties } from '../types';
 import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaAttach } from '../utils/lambda-attach';
@@ -23,15 +25,28 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
   constructor(scope: Construct, id: string, props: AppProperties) {
     super(scope, id);
 
-    if (!('output' in props)) {
-      throw new Error('Output is required');
+    let code: lambda.Code;
+    let handler: string;
+
+    if ('reference' in props) {
+      const params = codeFromSSM(this, props.reference, props.version);
+      const artifactBucket = s3.Bucket.fromBucketName(
+        this,
+        'ArtifactBucket',
+        params.artifact
+      );
+      code = lambda.Code.fromBucketV2(artifactBucket, params.code);
+      handler = params.cmd;
+    } else {
+      code = lambda.Code.fromAsset(props.output);
+      handler = props.buildParams.handler ?? 'index.handler';
     }
 
     this.function = new lambda.Function(this, `AppFunction`, {
       ...getDefaultLambda(props),
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: props.buildParams.handler ?? 'index.handler',
-      code: lambda.Code.fromAsset(props.output),
+      handler,
+      code,
     });
 
     if (props.queue) {

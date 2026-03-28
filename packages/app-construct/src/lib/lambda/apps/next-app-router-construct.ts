@@ -16,6 +16,7 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 import { z } from 'zod';
 
+import { codeFromSSM } from '../../shared/code-from-param';
 import {
   AppFile,
   cloudfrontBehaviours,
@@ -27,7 +28,6 @@ import { AppConstruct, AppProperties } from '../types';
 import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
-import { codeFromSSM } from '../../shared/code-from-param';
 
 const BuildParamsSchema = z.looseObject({ cmd: z.string().optional() });
 

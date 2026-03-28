@@ -1,5 +1,6 @@
 import { Attachable, Grantable } from '@fy-stack/types';
 import { Duration } from 'aws-cdk-lib';
+import * as cdk from 'aws-cdk-lib';
 import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import {
   AllowedMethods,
@@ -10,7 +11,6 @@ import {
   ViewerProtocolPolicy,
 } from 'aws-cdk-lib/aws-cloudfront';
 import { FunctionUrlOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
-import * as cdk from 'aws-cdk-lib';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import {

@@ -7,5 +7,7 @@ export { lambdaGrant } from './lib/lambda/utils/lambda-grant';
 export { ImageAppContainer } from './lib/standalone/image-app-container';
 export { NextAppRouterCode } from './lib/standalone/next-app-router-code';
 export { NextAppRouterContainer } from './lib/standalone/next-app-router-container';
+export { NodeApiCode } from './lib/standalone/node-api-code';
+export { NodeAppCode } from './lib/standalone/node-app-code';
 export { StaticConstruct } from './lib/static/static-construct';
 export type { StaticConstructProps } from './lib/static/types';

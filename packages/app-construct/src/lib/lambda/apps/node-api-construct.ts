@@ -7,10 +7,12 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaEventSource from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
+import { codeFromSSM } from '../../shared/code-from-param';
 import { AppConstruct, AppProperties } from '../types';
 import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaApi } from '../utils/lambda-api';
@@ -23,10 +25,6 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
 
   constructor(scope: Construct, id: string, props: AppProperties) {
     super(scope, id);
-
-    if (!('output' in props)) {
-      throw new Error('Output is required');
-    }
 
     const region = cdk.Stack.of(this).region;
     const environment = {
@@ -44,7 +42,24 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
     ];
 
     const functionProps = props.buildParams;
-    fs.writeFileSync(path.join(props.output, 'run.sh'), props.cmd);
+
+    let code: lambda.Code;
+    let handler: string;
+
+    if ('reference' in props) {
+      const params = codeFromSSM(this, props.reference, props.version);
+      const artifactBucket = s3.Bucket.fromBucketName(
+        this,
+        'ArtifactBucket',
+        params.artifact
+      );
+      code = lambda.Code.fromBucketV2(artifactBucket, params.code);
+      handler = params.cmd;
+    } else {
+      fs.writeFileSync(path.join(props.output, 'run.sh'), props.cmd);
+      code = lambda.Code.fromAsset(props.output);
+      handler = 'run.sh';
+    }
 
     const defaultProps = getDefaultLambda(props);
 
@@ -52,8 +67,8 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
       ...defaultProps,
       environment: Object.assign({}, defaultProps.environment, environment),
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'run.sh',
-      code: lambda.Code.fromAsset(props.output),
+      handler,
+      code,
       layers,
       ...functionProps,
     });

@@ -7,6 +7,11 @@ export function codeFromSSM(
   version = 'latest'
 ) {
   return {
+    artifact: ssm.StringParameter.fromStringParameterName(
+      scope,
+      `CodeArtifactStorageParamV${version}`,
+      `/${reference}/${version}/artifacts`
+    ).stringValue,
     code: ssm.StringParameter.fromStringParameterName(
       scope,
       `CodeFilesKeyParamV${version}`,
