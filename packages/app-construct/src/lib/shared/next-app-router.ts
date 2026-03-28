@@ -22,20 +22,20 @@ export function filesFromSSM(
   return {
     artifact: ssm.StringParameter.fromStringParameterName(
       scope,
-      'ArtifactStorageParam',
+      `ArtifactStorageParamV${version}`,
       `/${reference}/${version}/artifacts`
     ).stringValue,
     publicFiles: {
       key: ssm.StringParameter.fromStringParameterName(
         scope,
-        'PublicFilesParam',
+        `PublicFilesParamV${version}`,
         `/${reference}/${version}/files/publicFiles/key`
       ).stringValue,
     },
     staticFiles: {
       key: ssm.StringParameter.fromStringParameterName(
         scope,
-        'StaticFilesParam',
+        `StaticFilesParamV${version}`,
         `/${reference}/${version}/files/staticFiles/key`
       ).stringValue,
     },
@@ -45,10 +45,14 @@ export function filesFromSSM(
 export function staticDeployment(
   app: Construct,
   bucket: s3.IBucket,
-  output: string
+  output: string,
+  version?: string
 ) {
   const staticFiles = s3Deploy.Source.asset(path.join(output, '/.next/static'));
   const publicFiles = s3Deploy.Source.asset(path.join(output, '/public'));
+
+  const staticPrefix = version ? `${version}/assets/static` : 'assets/static';
+  const publicPrefix = version ? `${version}/assets/public` : 'assets/public';
 
   const staticDeployment = new s3Deploy.BucketDeployment(
     app,
@@ -56,7 +60,7 @@ export function staticDeployment(
     {
       destinationBucket: bucket,
       sources: [staticFiles],
-      destinationKeyPrefix: 'assets/static',
+      destinationKeyPrefix: staticPrefix,
       retainOnDelete: false,
       extract: false,
     }
@@ -68,7 +72,7 @@ export function staticDeployment(
     {
       destinationBucket: bucket,
       sources: [publicFiles],
-      destinationKeyPrefix: 'assets/public',
+      destinationKeyPrefix: publicPrefix,
       retainOnDelete: false,
       extract: false,
     }
@@ -78,14 +82,14 @@ export function staticDeployment(
     staticFiles: {
       deployment: staticDeployment,
       key: cdk.Fn.join('/', [
-        'assets/static',
+        staticPrefix,
         cdk.Fn.select(0, staticDeployment.objectKeys),
       ]),
     },
     publicFiles: {
       deployment: publicDeployment,
       key: cdk.Fn.join('/', [
-        'assets/public',
+        publicPrefix,
         cdk.Fn.select(0, publicDeployment.objectKeys),
       ]),
     },

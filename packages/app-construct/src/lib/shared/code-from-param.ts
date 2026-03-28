@@ -9,12 +9,12 @@ export function codeFromSSM(
   return {
     code: ssm.StringParameter.fromStringParameterName(
       scope,
-      'CodeFilesKeyParam',
+      `CodeFilesKeyParamV${version}`,
       `/${reference}/${version}/code`
     ).stringValue,
     cmd: ssm.StringParameter.fromStringParameterName(
       scope,
-      'CodeCMDParam',
+      `CodeCMDParamV${version}`,
       `/${reference}/${version}/code/handler`
     ).stringValue,
   };

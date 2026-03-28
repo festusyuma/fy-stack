@@ -36,7 +36,7 @@ export class NextAppRouterContainer extends Construct {
       ...props.container,
     });
 
-    const deployment = staticDeployment(this, artifactBucket, props.output);
+    const deployment = staticDeployment(this, artifactBucket, props.output, props.version);
 
     new ecrDeployment.ECRDeployment(this, 'DeployedContainer', {
       src: new ecrDeployment.DockerImageName(container.imageUri),

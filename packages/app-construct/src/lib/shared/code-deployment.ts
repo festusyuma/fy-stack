@@ -10,7 +10,7 @@ export function codeDeployment(
   version: string
 ) {
   const codeFiles = s3Deploy.Source.asset(output);
-  const codePrefix = `assets/code/${version}`;
+  const codePrefix = `${version}/assets/code`;
 
   const codeDeployment = new s3Deploy.BucketDeployment(
     scope,

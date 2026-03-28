@@ -9,17 +9,17 @@ export function containerParamsFromSSM(
   return {
     repository: ssm.StringParameter.fromStringParameterName(
       scope,
-      'RepositoryName',
+      `RepositoryNameV${version}`,
       `/${reference}/${version}/repository`
     ).stringValue,
     tag: ssm.StringParameter.fromStringParameterName(
       scope,
-      'VersionNumber',
+      `VersionNumberV${version}`,
       `/${reference}/${version}/tag`
     ).stringValue,
     cmd: ssm.StringListParameter.fromStringListParameterName(
       scope,
-      'ImageCMD',
+      `ImageCMDV${version}`,
       `/${reference}/${version}/cmd`
     ).stringListValue,
   };

@@ -25,7 +25,7 @@ export class NextAppRouterCode extends Construct {
       autoDeleteObjects: true,
     });
 
-    const deployment = staticDeployment(this, artifactBucket, props.output);
+    const deployment = staticDeployment(this, artifactBucket, props.output, props.version);
     const serverOutput = path.join(props.output, '/.next/standalone');
 
     fs.writeFileSync(path.join(serverOutput, 'run.sh'), props.cmd);
