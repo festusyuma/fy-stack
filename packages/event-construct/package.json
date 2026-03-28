@@ -1,9 +1,9 @@
 {
   "name": "@fy-stack/event-construct",
-  "version": "0.0.147-alpha.30610",
+  "version": "0.0.147-alpha.30611",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "@fy-stack/types": "0.0.147-alpha.30610",
+    "@fy-stack/types": "0.0.147-alpha.30611",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
