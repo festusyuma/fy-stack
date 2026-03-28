@@ -17,10 +17,10 @@ export function containerParamsFromSSM(
       `VersionNumberV${version}`,
       `/${reference}/${version}/tag`
     ).stringValue,
-    cmd: ssm.StringListParameter.fromStringListParameterName(
+    cmd: ssm.StringParameter.fromStringParameterName(
       scope,
       `ImageCMDV${version}`,
       `/${reference}/${version}/cmd`
-    ).stringListValue,
+    ).stringValue,
   };
 }

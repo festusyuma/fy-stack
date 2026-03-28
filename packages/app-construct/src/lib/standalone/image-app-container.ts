@@ -50,9 +50,9 @@ export class ImageAppContainer extends Construct {
           parameterName: `/${stackName}/${v}/tag`,
           stringValue: props.version,
         }),
-        new ssm.StringListParameter(this, `ImageCMDV${v}`, {
+        new ssm.StringParameter(this, `ImageCMDV${v}`, {
           parameterName: `/${stackName}/${v}/cmd`,
-          stringListValue: props.cmd,
+          stringValue: props.cmd.map((i) => i.trim()).join(','),
         })
       );
     }
