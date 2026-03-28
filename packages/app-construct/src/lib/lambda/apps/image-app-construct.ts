@@ -56,7 +56,7 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
     let code;
 
     if ('reference' in props) {
-      const params = containerParamsFromSSM(this, props.reference);
+      const params = containerParamsFromSSM(this, props.reference, props.version);
 
       const repository = ecr.Repository.fromRepositoryName(
         this,

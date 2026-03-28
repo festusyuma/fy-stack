@@ -37,34 +37,40 @@ export class NextAppRouterCode extends Construct {
       props.version
     );
 
-    new ssm.StringParameter(this, 'RepositoryParam', {
-      parameterName: `/${stackName}/artifacts`,
-      stringValue: artifactBucket.bucketName,
-    });
+    const versions = [props.version, 'latest'];
+    const parameters: ssm.IParameter[] = [];
 
-    new ssm.StringParameter(this, 'TagParam', {
-      parameterName: `/${stackName}/tag`,
-      stringValue: props.version,
-    });
+    for (const v of versions) {
+      parameters.push(
+        new ssm.StringParameter(this, `ArtifactsParam`, {
+          parameterName: `/${stackName}/${v}/artifacts`,
+          stringValue: artifactBucket.bucketName,
+        }),
+        new ssm.StringParameter(this, `CodeFilesKeyParam`, {
+          parameterName: `/${stackName}/${v}/code`,
+          stringValue: code,
+        }),
+        new ssm.StringParameter(this, `CodeCMDParam`, {
+          parameterName: `/${stackName}/${v}/code/handler`,
+          stringValue: 'run.sh',
+        }),
+        new ssm.StringParameter(this, `StaticFilesKeyParam`, {
+          parameterName: `/${stackName}/${v}/files/staticFiles/key`,
+          stringValue: deployment.files.staticFiles.key,
+        }),
+        new ssm.StringParameter(this, `PublicFilesKeyParam`, {
+          parameterName: `/${stackName}/${v}/files/publicFiles/key`,
+          stringValue: deployment.files.publicFiles.key,
+        }),
+        new ssm.StringParameter(this, `TagParam`, {
+          parameterName: `/${stackName}/${v}/tag`,
+          stringValue: props.version,
+        })
+      );
+    }
 
-    new ssm.StringParameter(this, 'CodeFilesKeyParam', {
-      parameterName: `/${stackName}/code`,
-      stringValue: code,
-    });
-
-    new ssm.StringParameter(this, 'CodeCMDParam', {
-      parameterName: `/${stackName}/code/handler`,
-      stringValue: 'run.sh',
-    });
-
-    new ssm.StringParameter(this, 'StaticFilesKeyParam', {
-      parameterName: `/${stackName}/files/staticFiles/key`,
-      stringValue: deployment.files.staticFiles.key,
-    });
-
-    new ssm.StringParameter(this, 'PublicFilesKeyParam', {
-      parameterName: `/${stackName}/files/publicFiles/key`,
-      stringValue: deployment.files.publicFiles.key,
-    });
+    for (const p of parameters) {
+      p.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
+    }
   }
 }

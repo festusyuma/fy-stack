@@ -33,23 +33,32 @@ export class ImageAppContainer extends Construct {
     new ecrDeployment.ECRDeployment(this, 'DeployedContainer', {
       src: new ecrDeployment.DockerImageName(container.imageUri),
       dest: new ecrDeployment.DockerImageName(
-        cdk.Fn.join(':', [repo.repositoryUri, props.version])
+        cdk.Fn.join(':', [repo.repositoryUri, props.version || 'latest'])
       ),
     });
 
-    new ssm.StringParameter(this, 'RepositoryParam', {
-      parameterName: `/${stackName}/repository`,
-      stringValue: repo.repositoryName,
-    });
+    const versions = [props.version, 'latest'];
+    const parameters: ssm.IParameter[] = [];
 
-    new ssm.StringListParameter(this, 'ImageCMD', {
-      parameterName: `/${stackName}/cmd`,
-      stringListValue: props.cmd,
-    });
+    for (const v of versions) {
+      parameters.push(
+        new ssm.StringParameter(this, `RepositoryParam`, {
+          parameterName: `/${stackName}/${v}/repository`,
+          stringValue: repo.repositoryName,
+        }),
+        new ssm.StringParameter(this, `TagParam`, {
+          parameterName: `/${stackName}/${v}/tag`,
+          stringValue: props.version,
+        }),
+        new ssm.StringListParameter(this, `ImageCMD`, {
+          parameterName: `/${stackName}/${v}/cmd`,
+          stringListValue: props.cmd,
+        })
+      );
+    }
 
-    new ssm.StringParameter(this, 'TagParam', {
-      parameterName: `/${stackName}/tag`,
-      stringValue: props.version,
-    });
+    for (const p of parameters) {
+      p.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
+    }
   }
 }

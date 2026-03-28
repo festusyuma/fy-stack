@@ -83,7 +83,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       handler = 'run.sh';
       code = lambda.Code.fromAsset(serverOutput);
     } else {
-      const fileParams = filesFromSSM(this, props.reference);
+      const fileParams = filesFromSSM(this, props.reference, props.version);
       const appArtifact = s3.Bucket.fromBucketName(
         scope,
         'AppArtifactStorage',
@@ -91,7 +91,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       );
 
       this.files = { ...fileParams, artifactBucket: appArtifact };
-      const cmdParams = codeFromSSM(this, props.reference);
+      const cmdParams = codeFromSSM(this, props.reference, props.version);
 
       handler = cmdParams.cmd;
       code = lambda.Code.fromBucketV2(appArtifact, cmdParams.code);

@@ -38,7 +38,7 @@ export type App = {
 
 export type AppResource =
   | { output: string; cmd: string }
-  | { reference: string };
+  | { reference: string; version?: string };
 
 export type AppProperties<BuildParams = Record<string, unknown>> = {
   logGroup: ILogGroup;

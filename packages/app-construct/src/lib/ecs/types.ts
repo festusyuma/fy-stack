@@ -56,6 +56,7 @@ export type AppSource =
     }
   | {
       reference: string;
+      version?: string;
       container?: Omit<ContainerDefinitionOptions, 'image' | 'logging'>;
     };
 

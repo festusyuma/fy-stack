@@ -40,7 +40,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       const deployment = staticDeployment(this, artifactBucket, props.output);
       this.files = { artifactBucket: artifactBucket, ...deployment.files };
     } else {
-      const fileParams = filesFromSSM(this, props.reference);
+      const fileParams = filesFromSSM(this, props.reference, props.version);
       const appArtifact = s3.Bucket.fromBucketName(
         scope,
         'AppArtifactStorage',

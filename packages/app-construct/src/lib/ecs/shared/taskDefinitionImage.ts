@@ -33,7 +33,7 @@ export function taskDefinitionImage(
 
     containerProps = _containerProps;
   } else {
-    const params = containerParamsFromSSM(scope, props.reference);
+    const params = containerParamsFromSSM(scope, props.reference, props.version);
 
     const repository = ecr.Repository.fromRepositoryName(
       scope,

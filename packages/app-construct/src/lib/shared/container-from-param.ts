@@ -1,22 +1,26 @@
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 
-export function containerParamsFromSSM(scope: Construct, reference: string) {
+export function containerParamsFromSSM(
+  scope: Construct,
+  reference: string,
+  version = 'latest'
+) {
   return {
     repository: ssm.StringParameter.fromStringParameterName(
       scope,
       'RepositoryName',
-      `/${reference}/repository`
+      `/${reference}/${version}/repository`
     ).stringValue,
     tag: ssm.StringParameter.fromStringParameterName(
       scope,
       'VersionNumber',
-      `/${reference}/tag`
+      `/${reference}/${version}/tag`
     ).stringValue,
     cmd: ssm.StringListParameter.fromStringListParameterName(
       scope,
       'ImageCMD',
-      `/${reference}/cmd`
+      `/${reference}/${version}/cmd`
     ).stringListValue,
   };
 }

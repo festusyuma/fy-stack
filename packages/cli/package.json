@@ -1,6 +1,6 @@
 {
   "name": "@fy-stack/cli",
-  "version": "0.0.147-alpha.30691",
+  "version": "0.0.147-alpha.30692",
   "dependencies": {
     "@aws-sdk/client-iam": "^3.731.1",
     "@aws-sdk/client-sts": "^3.731.1",
