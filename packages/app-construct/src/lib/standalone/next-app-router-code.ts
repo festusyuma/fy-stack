@@ -42,27 +42,27 @@ export class NextAppRouterCode extends Construct {
 
     for (const v of versions) {
       parameters.push(
-        new ssm.StringParameter(this, `ArtifactsParam`, {
+        new ssm.StringParameter(this, `ArtifactsParamV${v}`, {
           parameterName: `/${stackName}/${v}/artifacts`,
           stringValue: artifactBucket.bucketName,
         }),
-        new ssm.StringParameter(this, `CodeFilesKeyParam`, {
+        new ssm.StringParameter(this, `CodeFilesKeyParamV${v}`, {
           parameterName: `/${stackName}/${v}/code`,
           stringValue: code,
         }),
-        new ssm.StringParameter(this, `CodeCMDParam`, {
+        new ssm.StringParameter(this, `CodeCMDParamV${v}`, {
           parameterName: `/${stackName}/${v}/code/handler`,
           stringValue: 'run.sh',
         }),
-        new ssm.StringParameter(this, `StaticFilesKeyParam`, {
+        new ssm.StringParameter(this, `StaticFilesKeyParamV${v}`, {
           parameterName: `/${stackName}/${v}/files/staticFiles/key`,
           stringValue: deployment.files.staticFiles.key,
         }),
-        new ssm.StringParameter(this, `PublicFilesKeyParam`, {
+        new ssm.StringParameter(this, `PublicFilesKeyParamV${v}`, {
           parameterName: `/${stackName}/${v}/files/publicFiles/key`,
           stringValue: deployment.files.publicFiles.key,
         }),
-        new ssm.StringParameter(this, `TagParam`, {
+        new ssm.StringParameter(this, `TagParamV${v}`, {
           parameterName: `/${stackName}/${v}/tag`,
           stringValue: props.version,
         })

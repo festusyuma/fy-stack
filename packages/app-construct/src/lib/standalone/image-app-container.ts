@@ -33,7 +33,7 @@ export class ImageAppContainer extends Construct {
     new ecrDeployment.ECRDeployment(this, 'DeployedContainer', {
       src: new ecrDeployment.DockerImageName(container.imageUri),
       dest: new ecrDeployment.DockerImageName(
-        cdk.Fn.join(':', [repo.repositoryUri, props.version || 'latest'])
+        cdk.Fn.join(':', [repo.repositoryUri, props.version])
       ),
     });
 
@@ -42,15 +42,15 @@ export class ImageAppContainer extends Construct {
 
     for (const v of versions) {
       parameters.push(
-        new ssm.StringParameter(this, `RepositoryParam`, {
+        new ssm.StringParameter(this, `RepositoryParamV${v}`, {
           parameterName: `/${stackName}/${v}/repository`,
           stringValue: repo.repositoryName,
         }),
-        new ssm.StringParameter(this, `TagParam`, {
+        new ssm.StringParameter(this, `TagParamV${v}`, {
           parameterName: `/${stackName}/${v}/tag`,
           stringValue: props.version,
         }),
-        new ssm.StringListParameter(this, `ImageCMD`, {
+        new ssm.StringListParameter(this, `ImageCMDV${v}`, {
           parameterName: `/${stackName}/${v}/cmd`,
           stringListValue: props.cmd,
         })

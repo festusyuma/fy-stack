@@ -41,7 +41,7 @@ export class NextAppRouterContainer extends Construct {
     new ecrDeployment.ECRDeployment(this, 'DeployedContainer', {
       src: new ecrDeployment.DockerImageName(container.imageUri),
       dest: new ecrDeployment.DockerImageName(
-        cdk.Fn.join(':', [repo.repositoryUri, props.version || 'latest'])
+        cdk.Fn.join(':', [repo.repositoryUri, props.version])
       ),
     });
 
@@ -50,23 +50,23 @@ export class NextAppRouterContainer extends Construct {
 
     for (const v of versions) {
       parameters.push(
-        new ssm.StringParameter(this, `RepositoryParam`, {
+        new ssm.StringParameter(this, `RepositoryParamV${v}`, {
           parameterName: `/${stackName}/${v}/repository`,
           stringValue: repo.repositoryName,
         }),
-        new ssm.StringParameter(this, `ArtifactsParam`, {
+        new ssm.StringParameter(this, `ArtifactsParamV${v}`, {
           parameterName: `/${stackName}/${v}/artifacts`,
           stringValue: artifactBucket.bucketName,
         }),
-        new ssm.StringParameter(this, `StaticFilesKeyParam`, {
+        new ssm.StringParameter(this, `StaticFilesKeyParamV${v}`, {
           parameterName: `/${stackName}/${v}/files/staticFiles/key`,
           stringValue: deployment.files.staticFiles.key,
         }),
-        new ssm.StringParameter(this, `PublicFilesKeyParam`, {
+        new ssm.StringParameter(this, `PublicFilesKeyParamV${v}`, {
           parameterName: `/${stackName}/${v}/files/publicFiles/key`,
           stringValue: deployment.files.publicFiles.key,
         }),
-        new ssm.StringParameter(this, `TagParam`, {
+        new ssm.StringParameter(this, `TagParamV${v}`, {
           parameterName: `/${stackName}/${v}/tag`,
           stringValue: props.version,
         })
