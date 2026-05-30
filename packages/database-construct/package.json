@@ -1,9 +1,9 @@
 {
   "name": "@fy-stack/database-construct",
-  "version": "0.0.147-alpha.30611",
+  "version": "0.0.147-alpha.30613",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "@fy-stack/types": "0.0.147-alpha.30611",
+    "@fy-stack/types": "0.0.147-alpha.30613",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {

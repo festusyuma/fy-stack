@@ -48,6 +48,23 @@
           "config": ".verdaccio/config.yml",
           "storage": "tmp/local-registry/storage"
         }
+      },
+      "publish:alpha": {
+        "executor": "nx:run-commands",
+        "options": {
+          "commands": [
+            "nx release version $VERSION-alpha.{args.tag} --git-commit=false --git-tag=false",
+            {
+              "command": "nx run-many -t build",
+              "forwardAllArgs": false
+            },
+            {
+              "command": "npm publish --access public --tag alpha --workspaces",
+              "forwardAllArgs": false
+            }
+          ],
+          "parallel": false
+        }
       }
     }
   },

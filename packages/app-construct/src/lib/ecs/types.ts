@@ -41,6 +41,7 @@ export type EcsConstructProps = {
            *  it helps to be able to create unique priority for environment in this app
            * */
           priorityRange: [number, number];
+          priorityOverride?: Record<string, number>
         }
       | ApplicationLoadBalancerProps;
   };

@@ -6,6 +6,7 @@ import * as cdn from 'aws-cdk-lib/aws-cloudfront';
 import * as cdnOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
+import { Duration } from 'aws-cdk-lib';
 import * as elbV2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import type { LogGroup } from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
@@ -56,11 +57,12 @@ export class EcsServerConstruct extends Construct implements Grant {
       {
         cpu: 256,
         memoryLimitMiB: 512,
+        ...(definition ?? {}),
         runtimePlatform: {
           cpuArchitecture: ecs.CpuArchitecture.X86_64,
           operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+          ...(definition?.runtimePlatform ?? {}),
         },
-        ...(definition ?? {}),
       }
     );
 
@@ -73,6 +75,10 @@ export class EcsServerConstruct extends Construct implements Grant {
         subnetType: serverProps.assignPublicIp
           ? ec2.SubnetType.PUBLIC
           : ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
+      circuitBreaker: {
+        enable: true,
+        rollback: true,
       },
       securityGroups: [appSecurityGroup],
       propagateTags: ecs.PropagatedTagSource.SERVICE,
@@ -144,8 +150,11 @@ export class EcsServerConstruct extends Construct implements Grant {
             containerName: containerName,
           }),
         ],
+        deregistrationDelay: Duration.seconds(10),
         healthCheck: {
           path: path.join(appFullPath, healthPath ?? ''),
+          interval: Duration.seconds(10),
+          healthyThresholdCount: 3
         },
       }
     );
@@ -219,21 +228,39 @@ export class EcsServerConstruct extends Construct implements Grant {
       config = JSON.parse(
         fs.readFileSync(configPath).toString()
       ) as StackContext;
+    }
 
-      if (config.loadBalancer?.priorities?.[appPath]) {
-        priority = config.loadBalancer?.priorities?.[appPath];
-      } else {
-        const existingPriorities = Object.values(
-          config.loadBalancer?.priorities ?? {}
-        ).sort();
+    if (
+      this.props.loadBalancer &&
+      'priorityRange' in this.props.loadBalancer &&
+      this.props.loadBalancer.priorityOverride
+    ) {
+      config = {
+        ...config,
+        loadBalancer: {
+          ...config.loadBalancer,
+          priorities: Object.assign(
+            {},
+            config.loadBalancer?.priorities,
+            this.props.loadBalancer.priorityOverride
+          ),
+        },
+      };
+    }
 
-        while (existingPriorities.includes(priority)) {
-          priority += 1;
-        }
+    if (config.loadBalancer?.priorities?.[appPath]) {
+      priority = config.loadBalancer?.priorities?.[appPath];
+    } else {
+      const existingPriorities = Object.values(
+        config.loadBalancer?.priorities ?? {}
+      ).sort();
 
-        if (priority > priorityRage[1])
-          throw new Error(`Priority ${priority} exceeds priority range`);
+      while (existingPriorities.includes(priority)) {
+        priority += 1;
       }
+
+      if (priority > priorityRage[1])
+        throw new Error(`Priority ${priority} exceeds priority range`);
     }
 
     config = {

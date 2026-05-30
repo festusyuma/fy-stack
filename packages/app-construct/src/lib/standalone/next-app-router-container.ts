@@ -12,6 +12,7 @@ import type { StandaloneApp } from './types';
 
 export type NextAppRouterProps = StandaloneApp & {
   container?: DockerImageAssetOptions;
+  cmd: string[];
 };
 
 export class NextAppRouterContainer extends Construct {
@@ -36,7 +37,12 @@ export class NextAppRouterContainer extends Construct {
       ...props.container,
     });
 
-    const deployment = staticDeployment(this, artifactBucket, props.output, props.version);
+    const deployment = staticDeployment(
+      this,
+      artifactBucket,
+      props.output,
+      props.version
+    );
 
     new ecrDeployment.ECRDeployment(this, 'DeployedContainer', {
       src: new ecrDeployment.DockerImageName(container.imageUri),
@@ -69,6 +75,10 @@ export class NextAppRouterContainer extends Construct {
         new ssm.StringParameter(this, `TagParamV${v}`, {
           parameterName: `/${stackName}/${v}/tag`,
           stringValue: props.version,
+        }),
+        new ssm.StringParameter(this, `ImageCMDV${v}`, {
+          parameterName: `/${stackName}/${v}/cmd`,
+          stringValue: props.cmd.map((i) => i.trim()).join(','),
         })
       );
     }
