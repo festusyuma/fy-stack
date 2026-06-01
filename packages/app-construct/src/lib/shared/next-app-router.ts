@@ -46,7 +46,8 @@ export function staticDeployment(
   app: Construct,
   bucket: s3.IBucket,
   output: string,
-  version?: string
+  version?: string,
+  standalone = false
 ) {
   const staticFiles = s3Deploy.Source.asset(path.join(output, '/.next/static'));
   const publicFiles = s3Deploy.Source.asset(path.join(output, '/public'));
@@ -61,8 +62,9 @@ export function staticDeployment(
       destinationBucket: bucket,
       sources: [staticFiles],
       destinationKeyPrefix: staticPrefix,
-      retainOnDelete: false,
+      retainOnDelete: standalone,
       extract: false,
+      memoryLimit: 512,
     }
   );
 
@@ -73,8 +75,9 @@ export function staticDeployment(
       destinationBucket: bucket,
       sources: [publicFiles],
       destinationKeyPrefix: publicPrefix,
-      retainOnDelete: false,
+      retainOnDelete: standalone,
       extract: false,
+      memoryLimit: 512,
     }
   );
 
@@ -128,6 +131,7 @@ export function cloudfrontBehaviours(
           ? `${strippedBasePath}/`
           : undefined,
         retainOnDelete: false,
+        memoryLimit: 512,
       }
     );
 
@@ -152,6 +156,7 @@ export function cloudfrontBehaviours(
           ? `${strippedBasePath}/_next/static/`
           : '_next/static/',
         retainOnDelete: false,
+        memoryLimit: 512,
       }
     );
 

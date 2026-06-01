@@ -33,6 +33,7 @@ export class NextPagesExportCode extends Construct {
         destinationKeyPrefix: staticPrefix,
         retainOnDelete: true,
         extract: false,
+        memoryLimit: 512,
       }
     );
 
@@ -45,6 +46,7 @@ export class NextPagesExportCode extends Construct {
         destinationKeyPrefix: publicPrefix,
         retainOnDelete: true,
         extract: false,
+        memoryLimit: 512,
       }
     );
 

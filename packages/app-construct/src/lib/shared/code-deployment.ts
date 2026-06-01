@@ -21,6 +21,7 @@ export function codeDeployment(
       destinationKeyPrefix: codePrefix,
       retainOnDelete: true,
       extract: false,
+      memoryLimit: 512,
     }
   );
 

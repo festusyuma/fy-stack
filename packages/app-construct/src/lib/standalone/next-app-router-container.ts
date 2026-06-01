@@ -42,7 +42,8 @@ export class NextAppRouterContainer extends Construct {
       this,
       artifactBucket,
       props.output,
-      props.version
+      props.version,
+      true
     );
 
     new ecrDeployment.ECRDeployment(this, 'DeployedContainer', {

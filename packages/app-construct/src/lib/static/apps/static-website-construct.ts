@@ -48,6 +48,7 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
         destinationBucket: this.static,
         sources: [s3Deploy.Source.asset(props.output)],
         retainOnDelete: false,
+        memoryLimit: 512,
       });
     } else {
       const fileParams = staticFilesFromSSM(this, props.reference, props.version);
@@ -61,6 +62,7 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
         destinationBucket: this.static,
         sources: [s3Deploy.Source.bucket(artifactBucket, fileParams.filesKey)],
         retainOnDelete: false,
+        memoryLimit: 512,
       });
     }
   }

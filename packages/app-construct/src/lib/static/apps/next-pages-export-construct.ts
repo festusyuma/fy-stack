@@ -41,6 +41,7 @@ export class NextPagesExportConstruct
         destinationBucket: this.static,
         sources: [s3Deploy.Source.asset(path.join(props.output, '/.next'))],
         retainOnDelete: false,
+        memoryLimit: 512,
       });
 
       new s3Deploy.BucketDeployment(this, `PublicDeployment`, {
@@ -48,6 +49,7 @@ export class NextPagesExportConstruct
         sources: [s3Deploy.Source.asset(path.join(props.output, '/public'))],
         destinationKeyPrefix: 'public',
         retainOnDelete: false,
+        memoryLimit: 512,
       });
     } else {
       const fileParams = filesFromSSM(this, props.reference, props.version);
@@ -63,6 +65,7 @@ export class NextPagesExportConstruct
           s3Deploy.Source.bucket(artifactBucket, fileParams.staticFiles.key),
         ],
         retainOnDelete: false,
+        memoryLimit: 512,
       });
 
       new s3Deploy.BucketDeployment(this, `PublicDeployment`, {
@@ -72,6 +75,7 @@ export class NextPagesExportConstruct
         ],
         destinationKeyPrefix: 'public',
         retainOnDelete: false,
+        memoryLimit: 512,
       });
     }
   }

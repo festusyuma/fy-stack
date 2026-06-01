@@ -155,6 +155,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
             ? `${strippedBasePath}/_next/static/`
             : '_next/static/',
           retainOnDelete: false,
+          memoryLimit: 512,
         }
       );
 
@@ -180,6 +181,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
             ? `${strippedBasePath}/`
             : undefined,
           retainOnDelete: false,
+          memoryLimit: 512,
         }
       );
 

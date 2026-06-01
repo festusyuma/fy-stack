@@ -30,6 +30,7 @@ export class StaticWebsiteCode extends Construct {
         destinationKeyPrefix: filesPrefix,
         retainOnDelete: true,
         extract: false,
+        memoryLimit: 512
       }
     );
 
