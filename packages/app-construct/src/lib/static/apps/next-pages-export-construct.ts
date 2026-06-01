@@ -8,6 +8,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
 
+import { filesFromSSM } from '../../shared/next-app-router';
 import { AppConstruct, AppProperties } from '../types';
 
 export class NextPagesExportConstruct
@@ -35,18 +36,44 @@ export class NextPagesExportConstruct
       ],
     });
 
-    new s3Deploy.BucketDeployment(this, `StaticDeployment`, {
-      destinationBucket: this.static,
-      sources: [s3Deploy.Source.asset(path.join(props.output, '/.next'))],
-      retainOnDelete: false,
-    });
+    if ('output' in props) {
+      new s3Deploy.BucketDeployment(this, `StaticDeployment`, {
+        destinationBucket: this.static,
+        sources: [s3Deploy.Source.asset(path.join(props.output, '/.next'))],
+        retainOnDelete: false,
+      });
 
-    new s3Deploy.BucketDeployment(this, `PublicDeployment`, {
-      destinationBucket: this.static,
-      sources: [s3Deploy.Source.asset(path.join(props.output, '/public'))],
-      destinationKeyPrefix: 'public',
-      retainOnDelete: false,
-    });
+      new s3Deploy.BucketDeployment(this, `PublicDeployment`, {
+        destinationBucket: this.static,
+        sources: [s3Deploy.Source.asset(path.join(props.output, '/public'))],
+        destinationKeyPrefix: 'public',
+        retainOnDelete: false,
+      });
+    } else {
+      const fileParams = filesFromSSM(this, props.reference, props.version);
+      const artifactBucket = s3.Bucket.fromBucketName(
+        this,
+        'ArtifactBucket',
+        fileParams.artifact
+      );
+
+      new s3Deploy.BucketDeployment(this, `StaticDeployment`, {
+        destinationBucket: this.static,
+        sources: [
+          s3Deploy.Source.bucket(artifactBucket, fileParams.staticFiles.key),
+        ],
+        retainOnDelete: false,
+      });
+
+      new s3Deploy.BucketDeployment(this, `PublicDeployment`, {
+        destinationBucket: this.static,
+        sources: [
+          s3Deploy.Source.bucket(artifactBucket, fileParams.publicFiles.key),
+        ],
+        destinationKeyPrefix: 'public',
+        retainOnDelete: false,
+      });
+    }
   }
 
   cloudfront(path: string): Record<string, cloudfront.BehaviorOptions> {

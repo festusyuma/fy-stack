@@ -7,6 +7,7 @@ import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
 import { z } from 'zod';
 
+import { staticFilesFromSSM } from '../../shared/static-files-from-param';
 import { AppConstruct, AppProperties } from '../types';
 
 const BuildParamsSchema = z
@@ -42,11 +43,26 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
       ],
     });
 
-    new s3Deploy.BucketDeployment(this, `StaticDeployment`, {
-      destinationBucket: this.static,
-      sources: [s3Deploy.Source.asset(props.output)],
-      retainOnDelete: false,
-    });
+    if ('output' in props) {
+      new s3Deploy.BucketDeployment(this, `StaticDeployment`, {
+        destinationBucket: this.static,
+        sources: [s3Deploy.Source.asset(props.output)],
+        retainOnDelete: false,
+      });
+    } else {
+      const fileParams = staticFilesFromSSM(this, props.reference, props.version);
+      const artifactBucket = s3.Bucket.fromBucketName(
+        this,
+        'ArtifactBucket',
+        fileParams.artifact
+      );
+
+      new s3Deploy.BucketDeployment(this, `StaticDeployment`, {
+        destinationBucket: this.static,
+        sources: [s3Deploy.Source.bucket(artifactBucket, fileParams.filesKey)],
+        retainOnDelete: false,
+      });
+    }
   }
 
   cloudfront(path: string): Record<string, cloudfront.BehaviorOptions> {
@@ -73,7 +89,7 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
         code: cloudfront.FunctionCode.fromInline(`
         function handler(event) {
           var request = event.request
-          
+
           if (!request.uri.endsWith('/')) {
             return {
               statusCode: 301,
@@ -85,11 +101,11 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
               }
             }
           }
-          
+
           if (request.uri !== "${path || '/'}") {
             request.uri = '/index.html'
           }
-        
+
           return request;
         }
       `),

@@ -24,6 +24,7 @@ export class NextAppRouterContainer extends Construct {
     const repo = new ecr.Repository(this, 'Repository', {
       emptyOnDelete: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      imageTagMutability: ecr.TagMutability.IMMUTABLE,
     });
 
     const artifactBucket = new s3.Bucket(this, 'ArtifactStorage', {
