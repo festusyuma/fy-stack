@@ -114,6 +114,7 @@ export function cloudfrontBehaviours(
   isLambda = false
 ) {
   const strippedBasePath = basePath.replace(/^\/+|\/+$/g, '');
+  let publicDeployment: s3Deploy.BucketDeployment | undefined;
 
   if (files.publicFiles) {
     const publicFiles = s3Deploy.Source.bucket(
@@ -121,7 +122,7 @@ export function cloudfrontBehaviours(
       files.publicFiles.key
     );
 
-    const deployment = new s3Deploy.BucketDeployment(
+    publicDeployment = new s3Deploy.BucketDeployment(
       scope,
       `${strippedBasePath}PublicDeployment`,
       {
@@ -136,7 +137,7 @@ export function cloudfrontBehaviours(
     );
 
     if (files.publicFiles.deployment) {
-      deployment.node.addDependency(files.publicFiles.deployment);
+      publicDeployment.node.addDependency(files.publicFiles.deployment);
     }
   }
 
@@ -159,6 +160,8 @@ export function cloudfrontBehaviours(
         memoryLimit: 512,
       }
     );
+
+    if (publicDeployment) deployment.node.addDependency(publicDeployment);
 
     if (files.staticFiles.deployment) {
       deployment.node.addDependency(files.staticFiles.deployment);

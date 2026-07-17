@@ -33,7 +33,11 @@ export function taskDefinitionImage(
 
     containerProps = _containerProps;
   } else {
-    const params = containerParamsFromSSM(scope, props.reference, props.version);
+    const params = containerParamsFromSSM(
+      scope,
+      props.reference,
+      props.version
+    );
 
     const repository = ecr.Repository.fromRepositoryName(
       scope,
@@ -48,7 +52,7 @@ export function taskDefinitionImage(
   return props.taskDefinition.addContainer(id, {
     image,
     logging: new ecs.AwsLogDriver({
-      streamPrefix: id,
+      streamPrefix: "app",
       logGroup: props.logGroup,
     }),
     environment: {
