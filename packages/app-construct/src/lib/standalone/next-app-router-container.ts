@@ -1,0 +1,92 @@
+import * as cdk from 'aws-cdk-lib';
+import * as ecr from 'aws-cdk-lib/aws-ecr';
+import type { DockerImageAssetOptions } from 'aws-cdk-lib/aws-ecr-assets';
+import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
+import * as ecrDeployment from 'cdk-ecr-deployment';
+import { Construct } from 'constructs';
+
+import { staticDeployment } from '../shared/next-app-router';
+import type { StandaloneApp } from './types';
+
+export type NextAppRouterProps = StandaloneApp & {
+  container?: DockerImageAssetOptions;
+  cmd: string[];
+};
+
+export class NextAppRouterContainer extends Construct {
+  constructor(scope: Construct, id: string, props: NextAppRouterProps) {
+    super(scope, id);
+
+    const stackName = cdk.Stack.of(this).stackName;
+
+    const repo = new ecr.Repository(this, 'Repository', {
+      emptyOnDelete: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      imageTagMutability: ecr.TagMutability.IMMUTABLE,
+    });
+
+    const artifactBucket = new s3.Bucket(this, 'ArtifactStorage', {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
+
+    const container = new ecrAssets.DockerImageAsset(this, 'ContainerAsset', {
+      directory: props.output,
+      platform: ecrAssets.Platform.LINUX_AMD64,
+      ...props.container,
+    });
+
+    const deployment = staticDeployment(
+      this,
+      artifactBucket,
+      props.output,
+      props.version,
+      true
+    );
+
+    new ecrDeployment.ECRDeployment(this, 'DeployedContainer', {
+      src: new ecrDeployment.DockerImageName(container.imageUri),
+      dest: new ecrDeployment.DockerImageName(
+        cdk.Fn.join(':', [repo.repositoryUri, props.version])
+      ),
+    });
+
+    const versions = [props.version, 'latest'];
+    const parameters: ssm.IParameter[] = [];
+
+    for (const v of versions) {
+      parameters.push(
+        new ssm.StringParameter(this, `RepositoryParamV${v}`, {
+          parameterName: `/${stackName}/${v}/repository`,
+          stringValue: repo.repositoryName,
+        }),
+        new ssm.StringParameter(this, `ArtifactsParamV${v}`, {
+          parameterName: `/${stackName}/${v}/artifacts`,
+          stringValue: artifactBucket.bucketName,
+        }),
+        new ssm.StringParameter(this, `StaticFilesKeyParamV${v}`, {
+          parameterName: `/${stackName}/${v}/files/staticFiles/key`,
+          stringValue: deployment.files.staticFiles.key,
+        }),
+        new ssm.StringParameter(this, `PublicFilesKeyParamV${v}`, {
+          parameterName: `/${stackName}/${v}/files/publicFiles/key`,
+          stringValue: deployment.files.publicFiles.key,
+        }),
+        new ssm.StringParameter(this, `TagParamV${v}`, {
+          parameterName: `/${stackName}/${v}/tag`,
+          stringValue: props.version,
+        }),
+        new ssm.StringParameter(this, `ImageCMDV${v}`, {
+          parameterName: `/${stackName}/${v}/cmd`,
+          stringValue: props.cmd.map((i) => i.trim()).join(','),
+        })
+      );
+    }
+
+    for (const p of parameters) {
+      p.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
+    }
+  }
+}

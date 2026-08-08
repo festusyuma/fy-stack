@@ -2,37 +2,44 @@
   "name": "@fy-stack/source",
   "version": "0.0.146",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "version": "nx release version --git-commit=false --git-tag=false",
+    "publish": "npm publish --access public --workspaces"
+  },
   "private": true,
   "devDependencies": {
     "@eslint/js": "^9.8.0",
-    "@nx/eslint": "20.0.6",
-    "@nx/eslint-plugin": "20.0.6",
-    "@nx/js": "20.0.6",
-    "@nx/rollup": "20.0.6",
-    "@nx/web": "20.0.6",
-    "@swc-node/register": "~1.9.1",
-    "@swc/cli": "~0.3.12",
-    "@swc/core": "~1.5.7",
-    "@swc/helpers": "~0.5.11",
+    "@nx/eslint": "22.5.4",
+    "@nx/eslint-plugin": "22.5.4",
+    "@nx/js": "22.5.4",
+    "@nx/rollup": "22.5.4",
+    "@nx/web": "22.5.4",
+    "@swc-node/register": "1.11.1",
+    "@swc/cli": "0.7.10",
+    "@swc/core": "1.15.8",
+    "@swc/helpers": "0.5.19",
     "@types/node": "18.16.9",
-    "eslint": "^9.8.0",
-    "eslint-config-prettier": "^9.0.0",
+    "@typescript-eslint/utils": "^8.13.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "10.1.8",
     "eslint-plugin-simple-import-sort": "^12.1.1",
-    "nx": "20.0.6",
+    "nx": "22.5.4",
     "prettier": "^2.6.2",
-    "rollup": "^4.14.0",
+    "rollup": "^4.59.0",
     "swc-loader": "0.1.15",
     "tslib": "^2.3.0",
-    "typescript": "~5.5.2",
-    "typescript-eslint": "^8.0.0",
-    "verdaccio": "^5.0.4"
+    "typescript": "6.0.0-beta",
+    "typescript-eslint": "8.57.0",
+    "verdaccio": "6.3.1"
   },
   "workspaces": [
     "packages/*"
   ],
   "nx": {
-    "includedScripts": [],
+    "includedScripts": [
+      "version",
+      "publish"
+    ],
     "targets": {
       "local-registry": {
         "executor": "@nx/js:verdaccio",
@@ -41,10 +48,27 @@
           "config": ".verdaccio/config.yml",
           "storage": "tmp/local-registry/storage"
         }
+      },
+      "publish:alpha": {
+        "executor": "nx:run-commands",
+        "options": {
+          "commands": [
+            "nx release version $VERSION-alpha.{args.tag} --git-commit=false --git-tag=false",
+            {
+              "command": "nx run-many -t build",
+              "forwardAllArgs": false
+            },
+            {
+              "command": "npm publish --access public --tag alpha --workspaces",
+              "forwardAllArgs": false
+            }
+          ],
+          "parallel": false
+        }
       }
     }
   },
   "dependencies": {
-    "zod": "^3.24.1"
+    "zod": "^4.3.6"
   }
 }

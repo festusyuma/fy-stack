@@ -32,6 +32,7 @@ export class LambdaConstruct extends Construct {
               // @ts-expect-error invalid params
               buildParams: AppTypeConstruct.parse(app.buildParams ?? {}),
               vpc: props.vpc,
+              logGroup: props.logGroup,
               ...app,
             }),
           ];

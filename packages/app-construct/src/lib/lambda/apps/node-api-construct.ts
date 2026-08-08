@@ -7,56 +7,70 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaEventSource from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
-import { z } from 'zod';
 
+import { codeFromSSM } from '../../shared/code-from-param';
 import { AppConstruct, AppProperties } from '../types';
+import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaApi } from '../utils/lambda-api';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
-
-const BuildParamsSchema = z.object({
-  cmd: z.string(),
-})
 
 export class NodeApiConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
 
-  constructor(scope: Construct, id: string, props: AppProperties<z.infer<typeof BuildParamsSchema>>) {
+  constructor(scope: Construct, id: string, props: AppProperties) {
     super(scope, id);
 
     const region = cdk.Stack.of(this).region;
-    const environment = {};
-
-    Object.assign(environment, props.env);
+    const environment = {
+      AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
+      AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
+      PORT: '8080',
+    };
 
     const layers: lambda.ILayerVersion[] = [
       lambda.LayerVersion.fromLayerVersionArn(
         this,
         'WebAdapterLayer',
         `arn:aws:lambda:${region}:753240598075:layer:LambdaAdapterLayerX86:16`
-      )
+      ),
     ];
 
-    Object.assign(environment, {
-      AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
-      AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
-      PORT: '8080',
-    });
+    const functionProps = props.buildParams;
 
-    fs.writeFileSync(path.join(props.output, 'run.sh'), props.buildParams.cmd)
+    let code: lambda.Code;
+    let handler: string;
+
+    if ('reference' in props) {
+      const params = codeFromSSM(this, props.reference, props.version);
+      const artifactBucket = s3.Bucket.fromBucketName(
+        this,
+        'ArtifactBucket',
+        params.artifact
+      );
+      code = lambda.Code.fromBucketV2(artifactBucket, params.code);
+      handler = params.cmd;
+    } else {
+      fs.writeFileSync(path.join(props.output, 'run.sh'), props.cmd);
+      code = lambda.Code.fromAsset(props.output);
+      handler = 'run.sh';
+    }
+
+    const defaultProps = getDefaultLambda(props);
 
     this.function = new lambda.Function(this, `AppFunction`, {
+      ...defaultProps,
+      environment: Object.assign({}, defaultProps.environment, environment),
       runtime: lambda.Runtime.NODEJS_20_X,
-      memorySize: 512,
-      handler: 'run.sh',
+      handler,
+      code,
       layers,
-      timeout: cdk.Duration.seconds(30),
-      code: lambda.Code.fromAsset(props.output),
-      environment,
+      ...functionProps,
     });
 
     if (props.queue) {
@@ -81,7 +95,7 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
   }
 
   subscription(props: SubscriptionProps): ITopicSubscription {
-    throw new Error(`subscription is not supported for ${this}`)
+    throw new Error(`subscription is not supported for ${this}`);
   }
 
   cloudfront(path: string) {
@@ -110,10 +124,10 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
   }
 
   api(path: string) {
-    return lambdaApi(this.function, path)
+    return lambdaApi(this.function, path);
   }
 
-  static parse(params: unknown) {
-    return BuildParamsSchema.parse(params)
+  static parse<T>(params: T) {
+    return params;
   }
 }

@@ -4,27 +4,32 @@ import * as path from 'node:path';
 import { Attachable, Grantable } from '@fy-stack/types';
 import * as cdk from 'aws-cdk-lib';
 import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
+import { HttpUrlIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import { InvokeMode } from 'aws-cdk-lib/aws-lambda';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 import { z } from 'zod';
 
+import { codeFromSSM } from '../../shared/code-from-param';
 import {
   AppFile,
   cloudfrontBehaviours,
+  filesFromSSM,
   staticDeployment,
 } from '../../shared/next-app-router';
+import { publicBucket } from '../../shared/public-bucket';
 import { AppConstruct, AppProperties } from '../types';
+import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
 
-const BuildParamsSchema = z.object({
-  cmd: z.string(),
-});
+const BuildParamsSchema = z.looseObject({ cmd: z.string().optional() });
 
 export class NextAppRouterConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
@@ -41,10 +46,12 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     super(scope, id);
 
     const region = cdk.Stack.of(this).region;
-    const deployment = staticDeployment(this, props.output);
 
-    this.static = deployment.staticBucket;
-    this.files = deployment.files;
+    this.static = publicBucket(this, 'StaticBucket');
+    const artifactBucket = new s3.Bucket(this, 'ArtifactStorage', {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
 
     const webAdapterLayer = lambda.LayerVersion.fromLayerVersionArn(
       this,
@@ -59,20 +66,45 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       AWS_LWA_INVOKE_MODE: 'response_stream',
     };
 
-    Object.assign(environment, props.env);
+    const { cmd, ...functionProps } = props.buildParams;
+    const defaultProps = getDefaultLambda(props);
 
-    const serverOutput = path.join(props.output, '/.next/standalone');
-    fs.writeFileSync(path.join(serverOutput, 'run.sh'), props.buildParams.cmd);
+    let handler;
+    let code;
+
+    if ('output' in props) {
+      const deployment = staticDeployment(this, artifactBucket, props.output);
+      this.files = { artifactBucket, ...deployment.files };
+      const serverOutput = path.join(props.output, '/.next/standalone');
+
+      if (!cmd) throw new Error('cmd is required when building from local');
+      fs.writeFileSync(path.join(serverOutput, 'run.sh'), cmd);
+
+      handler = 'run.sh';
+      code = lambda.Code.fromAsset(serverOutput);
+    } else {
+      const fileParams = filesFromSSM(this, props.reference, props.version);
+      const appArtifact = s3.Bucket.fromBucketName(
+        scope,
+        'AppArtifactStorage',
+        fileParams.artifact
+      );
+
+      this.files = { ...fileParams, artifactBucket: appArtifact };
+      const cmdParams = codeFromSSM(this, props.reference, props.version);
+
+      handler = cmdParams.cmd;
+      code = lambda.Code.fromBucketV2(appArtifact, cmdParams.code);
+    }
 
     this.function = new lambda.Function(this, `AppFunction`, {
+      ...defaultProps,
+      environment: Object.assign({}, defaultProps.environment, environment),
       runtime: lambda.Runtime.NODEJS_20_X,
-      memorySize: 512,
-      handler: 'run.sh',
-      timeout: cdk.Duration.seconds(60),
-      code: lambda.Code.fromAsset(serverOutput),
-      loggingFormat: lambda.LoggingFormat.JSON,
+      handler,
+      code,
       layers: [webAdapterLayer],
-      environment,
+      ...functionProps,
     });
   }
 
@@ -89,7 +121,8 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
       this.static,
       serverOrigin,
       path,
-      this.files
+      this.files,
+      true
     );
   }
 
@@ -97,8 +130,102 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     throw new Error(`cloudfrontPolicy not supported for ${this}`);
   }
 
-  api(): Record<string, HttpRouteIntegration> {
-    throw new Error('api not supported for this construct');
+  api(basePath: string): Record<string, HttpRouteIntegration> {
+    const strippedBasePath = basePath.replace(/^\/+|\/+$/g, '');
+
+    const apiUrl = this.function.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+      invokeMode: InvokeMode.RESPONSE_STREAM,
+    });
+
+    if (this.files.staticFiles) {
+      const staticFiles = s3Deploy.Source.bucket(
+        this.files.artifactBucket,
+        this.files.staticFiles.key
+      );
+
+      const deployment = new s3Deploy.BucketDeployment(
+        this,
+        `${strippedBasePath}StaticDeployment`,
+        {
+          destinationBucket: this.static,
+          prune: false,
+          sources: [staticFiles],
+          destinationKeyPrefix: strippedBasePath
+            ? `${strippedBasePath}/_next/static/`
+            : '_next/static/',
+          retainOnDelete: false,
+          memoryLimit: 512,
+        }
+      );
+
+      if (this.files.staticFiles.deployment) {
+        deployment.node.addDependency(this.files.staticFiles.deployment);
+      }
+    }
+
+    if (this.files.publicFiles) {
+      const publicFiles = s3Deploy.Source.bucket(
+        this.files.artifactBucket,
+        this.files.publicFiles.key
+      );
+
+      const deployment = new s3Deploy.BucketDeployment(
+        this,
+        `${strippedBasePath}PublicDeployment`,
+        {
+          destinationBucket: this.static,
+          prune: false,
+          sources: [publicFiles],
+          destinationKeyPrefix: strippedBasePath
+            ? `${strippedBasePath}/`
+            : undefined,
+          retainOnDelete: false,
+          memoryLimit: 512,
+        }
+      );
+
+      if (this.files.publicFiles.deployment) {
+        deployment.node.addDependency(this.files.publicFiles.deployment);
+      }
+    }
+
+    if (strippedBasePath) this.function.addEnvironment('BASE_PATH', basePath);
+
+    const imageIntegration = new HttpUrlIntegration(
+      'AppImageIntegration',
+      apiUrl.url + path.join(strippedBasePath, '_next/image', '{proxy}')
+    );
+
+    const staticIntegration = new HttpUrlIntegration(
+      'AppStaticIntegration',
+      this.static.bucketWebsiteUrl +
+        path.join(strippedBasePath, '/_next', '{proxy}')
+    );
+
+    const publicIntegration = new HttpUrlIntegration(
+      'AppPublicIntegration',
+      this.static.bucketWebsiteUrl +
+        path.join(strippedBasePath, '/public', '{proxy}')
+    );
+
+    const wildcardIntegration = new HttpUrlIntegration(
+      'AppWildcardIntegration',
+      apiUrl.url + path.join(strippedBasePath, '{proxy}')
+    );
+
+    const defaultIntegration = new HttpUrlIntegration(
+      'AppIntegration',
+      apiUrl.url + strippedBasePath
+    );
+
+    return {
+      [`${basePath}/_next/image/{proxy+}`]: imageIntegration,
+      [`${basePath}/_next/{proxy+}`]: staticIntegration,
+      [`${basePath}/public/{proxy+}`]: publicIntegration,
+      [`${basePath}/{proxy+}`]: wildcardIntegration,
+      [basePath]: defaultIntegration,
+    };
   }
 
   attach(attachable: Record<string, Attachable>) {

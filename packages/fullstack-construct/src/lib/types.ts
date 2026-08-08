@@ -32,7 +32,7 @@ export type FullStackConstructProps = {
   database?: DatabaseConstructProps;
   ecs?: Omit<
     EcsConstructProps,
-    'vpc' | 'environmentPath' | 'server' | 'tasks' | 'environment'
+    'vpc' | 'environmentPath' | 'server' | 'tasks' | 'environment' | 'logGroup'
   > & {
     server: Omit<NonNullable<EcsConstructProps['server']>, 'apps'> & {
       grants?: AppGrant[];

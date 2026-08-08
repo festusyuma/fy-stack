@@ -1,54 +1,67 @@
 import { Attachable, Grantable } from '@fy-stack/types';
-import * as cdk from 'aws-cdk-lib';
+import { Duration } from 'aws-cdk-lib';
 import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { BehaviorOptions } from 'aws-cdk-lib/aws-cloudfront';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { LoggingFormat } from 'aws-cdk-lib/aws-lambda';
-import * as lambdaEventSource from 'aws-cdk-lib/aws-lambda-event-sources';
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
 import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
-import { z } from 'zod';
 
+import { codeFromSSM } from '../../shared/code-from-param';
 import { AppConstruct, AppProperties } from '../types';
+import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
-
-const BuildParamsSchema = z.object({
-  handler: z.string().optional(),
-})
 
 export class NodeAppConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
 
-  constructor(scope: Construct, id: string, props: AppProperties<z.infer<typeof BuildParamsSchema>>) {
+  constructor(scope: Construct, id: string, props: AppProperties) {
     super(scope, id);
 
-    const environment = {};
+    let code: lambda.Code;
+    let handler: string;
 
-    Object.assign(environment, props.env);
+    if ('reference' in props) {
+      const params = codeFromSSM(this, props.reference, props.version);
+      const artifactBucket = s3.Bucket.fromBucketName(
+        this,
+        'ArtifactBucket',
+        params.artifact
+      );
+      code = lambda.Code.fromBucketV2(artifactBucket, params.code);
+      handler = params.cmd;
+    } else {
+      code = lambda.Code.fromAsset(props.output);
+      handler = props.buildParams.handler ?? 'index.handler';
+    }
 
     this.function = new lambda.Function(this, `AppFunction`, {
+      ...getDefaultLambda(props),
       runtime: lambda.Runtime.NODEJS_20_X,
-      memorySize: 512,
-      handler: props.buildParams.handler ?? "index.handler",
-      timeout: cdk.Duration.seconds(30),
-      code: lambda.Code.fromAsset(props.output),
-      loggingFormat: LoggingFormat.JSON,
-      environment,
+      handler,
+      code,
     });
 
     if (props.queue) {
-      this.queue = new sqs.Queue(this, 'AppQueue', {
-        visibilityTimeout: cdk.Duration.seconds(59),
+      const { batchSize, ...queueProps } = props.queue;
+
+      this.queue = new Queue(this, 'AppQueue', {
+        visibilityTimeout:
+          queueProps.visibilityTimeout ??
+          Duration.seconds((props.timeout ?? 30) + 30),
+        ...queueProps,
       });
 
       this.function.addEventSource(
-        new lambdaEventSource.SqsEventSource(this.queue, {
-          batchSize: props.queue.batchSize,
+        new SqsEventSource(this.queue, {
+          batchSize: batchSize,
         })
       );
     }
@@ -64,13 +77,16 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
 
   subscription(props: SubscriptionProps): ITopicSubscription {
     if (this.queue)
-      return new snsSubscriptions.SqsSubscription(this.queue, { ...props, rawMessageDelivery: true });
+      return new snsSubscriptions.SqsSubscription(this.queue, {
+        ...props,
+        rawMessageDelivery: true,
+      });
 
     return new snsSubscriptions.LambdaSubscription(this.function, props);
   }
 
   cloudfront(path: string): Record<string, BehaviorOptions> {
-    throw new Error(`cloudfront not supported for ${this}`)
+    throw new Error(`cloudfront not supported for ${this}`);
   }
 
   cloudfrontPolicy(distributionId: string) {
@@ -87,11 +103,11 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
 
     return {
       [path]: integration,
-      [`${path}/{proxy+}`]: integration
+      [`${path}/{proxy+}`]: integration,
     };
   }
 
-  static parse(params: unknown) {
-    return BuildParamsSchema.parse(params)
+  static parse<T>(params: T) {
+    return params;
   }
 }

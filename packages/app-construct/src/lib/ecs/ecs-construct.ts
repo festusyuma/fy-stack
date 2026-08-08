@@ -20,6 +20,7 @@ export class EcsConstruct extends Construct {
     if (props.server) {
       this.server = new EcsServerConstruct(this, 'Server', {
         ...props.server,
+        logGroup: props.logGroup,
         cluster: appCluster,
         environmentPath: props.environmentPath,
         environment: props.environment,
@@ -35,6 +36,8 @@ export class EcsConstruct extends Construct {
             return [
               key,
               new TaskConstruct(this, `${key}Task`, {
+                logGroup: props.logGroup,
+                taskName: key,
                 buildParams: TaskConstruct.parse(app.buildParams ?? {}),
                 cluster: appCluster,
                 vpc: props.vpc,

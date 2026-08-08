@@ -1,5 +1,6 @@
 import { Attachable, Grantable } from '@fy-stack/types';
 import { Duration } from 'aws-cdk-lib';
+import * as cdk from 'aws-cdk-lib';
 import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import {
   AllowedMethods,
@@ -10,9 +11,9 @@ import {
   ViewerProtocolPolicy,
 } from 'aws-cdk-lib/aws-cloudfront';
 import { FunctionUrlOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as ecr from 'aws-cdk-lib/aws-ecr';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import {
-  AssetImageCodeProps,
   Code,
   Function,
   FunctionUrlAuthType,
@@ -29,22 +30,16 @@ import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 import { z } from 'zod';
 
+import { containerParamsFromSSM } from '../../shared/container-from-param';
 import { AppConstruct, AppProperties } from '../types';
 import { getDefaultLambda } from '../utils/getDefaultLambda';
 import { lambdaApi } from '../utils/lambda-api';
 import { lambdaAttach } from '../utils/lambda-attach';
 import { lambdaGrant } from '../utils/lambda-grant';
 
-const BuildParamsSchema = z
-  .object({
-    container: z
-      .object({
-        file: z.string().optional(),
-        cmd: z.string().array().optional(),
-      })
-      .passthrough(),
-  })
-  .passthrough();
+const BuildParamsSchema = z.looseObject({
+  container: z.looseObject({ file: z.string().optional() }).optional(),
+});
 
 export class ImageAppConstruct extends Construct implements AppConstruct {
   public function: Function;
@@ -53,31 +48,58 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
   constructor(
     scope: Construct,
     id: string,
-    props: AppProperties<
-      z.infer<typeof BuildParamsSchema> & AssetImageCodeProps
-    >
+    props: AppProperties<z.infer<typeof BuildParamsSchema>>
   ) {
     super(scope, id);
 
+    const { container, ...functionProps } = props.buildParams;
+
+    let code;
+
+    if ('reference' in props) {
+      const params = containerParamsFromSSM(
+        this,
+        props.reference,
+        props.version
+      );
+
+      const repository = ecr.Repository.fromRepositoryName(
+        this,
+        'Repository',
+        params.repository
+      );
+
+      code = Code.fromEcrImage(repository, {
+        tagOrDigest: params.tag,
+        cmd: cdk.Fn.split(',', params.cmd),
+      });
+    } else {
+      code = Code.fromAssetImage(props.output, {
+        platform: Platform.LINUX_AMD64,
+        ...container,
+      });
+    }
+
     this.function = new Function(this, `AppFunction`, {
       ...getDefaultLambda(props),
-      code: Code.fromAssetImage(props.output, {
-        platform: Platform.LINUX_AMD64,
-        ...props.buildParams.container,
-      }),
+      code,
       handler: Handler.FROM_IMAGE,
       runtime: Runtime.FROM_IMAGE,
+      ...functionProps,
     });
 
     if (props.queue) {
+      const { batchSize, ...queueProps } = props.queue;
+
       this.queue = new Queue(this, 'AppQueue', {
-        visibilityTimeout: Duration.seconds((props.timeout ?? 30) + 30),
+        visibilityTimeout:
+          queueProps.visibilityTimeout ??
+          Duration.seconds((props.timeout ?? 30) + 30),
+        ...queueProps,
       });
 
       this.function.addEventSource(
-        new SqsEventSource(this.queue, {
-          batchSize: props.queue.batchSize,
-        })
+        new SqsEventSource(this.queue, { batchSize })
       );
     }
   }

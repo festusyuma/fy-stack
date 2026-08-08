@@ -11,7 +11,7 @@ import {
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { Construct } from 'constructs';
 
-import { paramsFromAttachable } from '../../util/params-from-attachable';
+import { paramsFromAttachable } from '../../shared/params-from-attachable';
 import { taskDefinitionImage } from '../shared/taskDefinitionImage';
 import { AppConstruct, AppProperties } from '../types';
 
@@ -24,15 +24,11 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
     private props: AppProperties<unknown>
   ) {
     super(scope, id);
-
-    this.container = taskDefinitionImage(`${props.appName}AppContainer`, {
-      taskDefinition: props.taskDefinition,
-      port: props.port,
-      env: props.env,
-      output: props.output,
-      container: props.container,
-      environmentPath: props.environmentPath,
-    });
+    this.container = taskDefinitionImage(
+      this,
+      `${props.appName}AppContainer`,
+      props
+    );
   }
 
   attach(attachable: Record<string, Attachable>): void {

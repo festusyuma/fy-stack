@@ -5,7 +5,7 @@ import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 
-import { CDNConstructProps } from './types';
+import { CDNConstructProps, RouteProps } from './types';
 
 /**
  * CDNConstruct is a custom construct that sets up a CloudFront distribution
@@ -18,15 +18,16 @@ export class CDNConstruct extends Construct implements Attachable {
   constructor(scope: Construct, id: string, props: CDNConstructProps) {
     super(scope, id);
 
-    const routes: Record<string, CDNResource> = {};
+    const routes: Record<string, { resource: CDNResource } & RouteProps> = {};
 
     Object.assign(
       routes,
       Object.fromEntries(
         Object.entries(props.routes).map(([key, val]) => {
-          const app = props.resources?.[val.$resource];
-          if (!app) throw new Error(`"${val.$resource}" app not found`);
-          return [key, app];
+          const resource = props.resources?.[val.$resource];
+          if (!resource)
+            throw new Error(`"${val.$resource}" resource not found`);
+          return [key, { resource, ...val }];
         })
       )
     );
@@ -35,17 +36,18 @@ export class CDNConstruct extends Construct implements Attachable {
     if (!base) throw new Error('no base route');
 
     const { '/*': defaultBehavior, ...additionalDefaultBehaviors } =
-      base.cloudfront('');
+      base.resource.cloudfront('');
 
     if (!defaultBehavior) throw new Error('no default behaviour');
 
-    const additionalBehaviors: Record<string, cloudfront.BehaviorOptions> = {}
+    const additionalBehaviors: Record<string, cloudfront.BehaviorOptions> = {};
 
     for (const i in otherRoutes) {
-      Object.assign(additionalBehaviors, otherRoutes[i]?.cloudfront(i));
+      const routeBehaviour = otherRoutes[i]?.resource.cloudfront(i);
+      Object.assign(additionalBehaviors, routeBehaviour);
     }
 
-    Object.assign(additionalBehaviors, additionalDefaultBehaviors)
+    Object.assign(additionalBehaviors, additionalDefaultBehaviors);
 
     let certificate: acm.Certificate | undefined;
 
@@ -116,7 +118,7 @@ export class CDNConstruct extends Construct implements Attachable {
         ? [this.domainName, ...subjectAlternativeNames]
         : undefined,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
-      enableLogging: true
+      enableLogging: true,
     });
 
     if (props.domains) {
