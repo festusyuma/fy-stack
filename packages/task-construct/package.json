@@ -1,8 +1,8 @@
 {
   "name": "@fy-stack/task-construct",
-  "version": "0.0.147-alpha.30616",
+  "version": "0.0.147",
   "dependencies": {
-    "@fy-stack/types": "0.0.147-alpha.30616",
+    "@fy-stack/types": "0.0.147",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
