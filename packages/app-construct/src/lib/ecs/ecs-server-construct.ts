@@ -2,11 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { AppType, Grant, Grantable, StackContext } from '@fy-stack/types';
+import { Duration } from 'aws-cdk-lib';
 import * as cdn from 'aws-cdk-lib/aws-cloudfront';
 import * as cdnOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
-import { Duration } from 'aws-cdk-lib';
 import * as elbV2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import type { LogGroup } from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
