@@ -13,6 +13,8 @@
     "@nx/eslint-plugin": "22.5.4",
     "@nx/js": "22.5.4",
     "@nx/rollup": "22.5.4",
+    "@nx/vite": "22.5.4",
+    "@nx/vitest": "22.5.4",
     "@nx/web": "22.5.4",
     "@swc-node/register": "1.11.1",
     "@swc/cli": "0.7.10",
@@ -20,9 +22,11 @@
     "@swc/helpers": "0.5.19",
     "@types/node": "18.16.9",
     "@typescript-eslint/utils": "^8.13.0",
+    "@vitest/coverage-v8": "^4.0.0",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-simple-import-sort": "^12.1.1",
+    "jsdom": "^27.1.0",
     "nx": "22.5.4",
     "prettier": "^2.6.2",
     "rollup": "^4.59.0",
@@ -30,7 +34,9 @@
     "tslib": "^2.3.0",
     "typescript": "6.0.0-beta",
     "typescript-eslint": "8.57.0",
-    "verdaccio": "6.3.1"
+    "verdaccio": "6.3.1",
+    "vite": "^7.0.0",
+    "vitest": "^4.0.8"
   },
   "workspaces": [
     "packages/*"

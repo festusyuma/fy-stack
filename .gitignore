@@ -3,7 +3,7 @@
 # compiled output
 dist
 tmp
-/out-tsc
+out-tsc
 
 # dependencies
 node_modules
@@ -43,3 +43,6 @@ Thumbs.db
 
 .npmrc
 .env
+vitest.config.*.timestamp*
+
+**/tsconfig.tsbuildinfo

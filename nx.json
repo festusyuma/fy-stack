@@ -43,5 +43,14 @@
     "version": {
       "preVersionCommand": "npx nx run-many -t build"
     }
+  },
+  "targetDefaults": {
+    "@nx/vitest:test": {
+      "cache": true,
+      "inputs": ["default", "^production"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    }
   }
 }
