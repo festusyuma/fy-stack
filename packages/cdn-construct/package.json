@@ -18,6 +18,17 @@
     "!**/*.tsbuildinfo"
   ],
   "nx": {
-    "name": "cdn-construct"
+    "name": "cdn-construct",
+    "targets": {
+      "test": {
+        "executor": "@nx/vitest:test",
+        "outputs": [
+          "{options.reportsDirectory}"
+        ],
+        "options": {
+          "reportsDirectory": "../../coverage/packages/cdn-construct"
+        }
+      }
+    }
   }
 }
