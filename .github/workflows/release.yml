@@ -3,13 +3,19 @@ name: Release
 on:
   release:
     types: [ published ]
+  pull_request:
+    types: [ closed ]
+    branches:
+      - main
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
+  pull-requests: write
 
 jobs:
-  publish:
+  stage-publish:
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,5 +43,51 @@ jobs:
       - name: Build packages
         run: bunx nx run-many -t build
 
-      - name: Publish to npm
-        run: npm publish --access public --workspaces
+      - name: Stage publish to npm
+        run: npm stage publish --access public --workspaces
+
+      - name: Open PR to main with version changes
+        uses: peter-evans/create-pull-request@v8
+        with:
+          base: main
+          branch: release/${{ github.event.release.tag_name }}
+          title: "chore: approve release ${{ github.event.release.tag_name }}"
+          commit-message: "chore: release ${{ github.event.release.tag_name }}"
+          body: |
+            Automated version bump from release [`${{ github.event.release.tag_name }}`](${{ github.event.release.html_url }}).
+          add-paths: |
+            package.json
+            packages/*/package.json
+            bun.lock
+
+  publish:
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Approve staged packages
+        run: |
+          for pkg_json in packages/*/package.json; do
+            name=$(node -p "require('./$pkg_json').name")
+            version=$(node -p "require('./$pkg_json').version")
+            stage_id=$(npm stage list "$name" --json | jq -r --arg v "$version" '.[] | select(.version == $v) | .id')
+
+            if [ -z "$stage_id" ]; then
+              echo "::warning::No staged version found for $name@$version"
+              continue
+            fi
+
+            echo "Approving $name@$version (stage $stage_id)"
+            npm stage approve "$stage_id"
+          done
