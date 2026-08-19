@@ -92,6 +92,7 @@
     }
   },
   "dependencies": {
+    "aws-cdk-lib": "^2.265.0",
     "zod": "^4.3.6"
   }
 }

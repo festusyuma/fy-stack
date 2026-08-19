@@ -7,7 +7,7 @@
     "@fy-stack/types": "0.0.147"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.243.0",
+    "aws-cdk-lib": "2.265.0",
     "constructs": "^10.5.1"
   },
   "type": "commonjs",
