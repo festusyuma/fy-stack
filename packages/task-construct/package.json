@@ -1,6 +1,7 @@
 {
   "name": "@fy-stack/task-construct",
   "version": "0.0.147",
+  "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
     "@fy-stack/types": "0.0.147",
     "tslib": "^2.3.0"
