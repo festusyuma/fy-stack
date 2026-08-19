@@ -2,7 +2,7 @@ name: Release
 
 on:
   release:
-    types: [published]
+    types: [ published ]
 
 jobs:
   publish:
@@ -20,11 +20,11 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Set package versions from release tag
-        run: npm run version -- "${TAG_NAME#v}"
+        run: bunx nx release version "${TAG_NAME#v}" --git-commit=false --git-tag=false
         env:
           TAG_NAME: ${{ github.event.release.tag_name }}
 
-      - name: Build
+      - name: Build packages
         run: bunx nx run-many -t build
 
       - name: Configure npm registry auth
@@ -32,5 +32,5 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish
-        run: npm run publish
+      - name: Publish to npm
+        run: npm publish --access public --workspaces
