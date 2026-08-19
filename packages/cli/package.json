@@ -1,6 +1,7 @@
 {
   "name": "@fy-stack/cli",
   "version": "0.0.147",
+  "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
     "@aws-sdk/client-iam": "^3.731.1",
     "@aws-sdk/client-sts": "^3.731.1",

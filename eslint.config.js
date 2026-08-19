@@ -1,16 +1,16 @@
 const nx = require('@nx/eslint-plugin');
-const simpleImportSort = require("eslint-plugin-simple-import-sort");
+const simpleImportSort = require('eslint-plugin-simple-import-sort');
 
 module.exports = [
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
   ...nx.configs['flat/javascript'],
   {
-    ignores: ['**/dist'],
+    ignores: ['**/dist', '**/vitest.config.*.timestamp*'],
   },
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-    plugins: { "simple-import-sort": simpleImportSort },
+    plugins: { 'simple-import-sort': simpleImportSort },
     rules: {
       '@nx/enforce-module-boundaries': [
         'error',
@@ -25,10 +25,9 @@ module.exports = [
           ],
         },
       ],
-      "simple-import-sort/imports": "error",
-      "simple-import-sort/exports": "error"
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
     },
-
   },
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
