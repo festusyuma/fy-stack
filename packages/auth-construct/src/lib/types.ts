@@ -1,4 +1,10 @@
+import type { SignInAliases } from 'aws-cdk-lib/aws-cognito';
+
 export interface AuthConstructProps {
+  appName: string;
+  environment: string;
+  signInAliases?: SignInAliases;
+  domain?: string;
   /** User pool group names */
   groups?: string[];
   /**
@@ -10,6 +16,4 @@ export interface AuthConstructProps {
     /** Refresh token validity in hours */
     refreshTokenValidity?: number;
   };
-  /** Domain name prefix */
-  domainPrefix?: string
 }

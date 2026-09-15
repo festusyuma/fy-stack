@@ -42,10 +42,11 @@
     },
     "packages/apigateway-construct": {
       "name": "@fy-stack/apigateway-construct",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "dependencies": {
-        "@fy-stack/types": "0.0.147",
+        "@fy-stack/types": "0.0.150-alpha.30003",
         "tslib": "^2.3.0",
+        "vitest": "^4.0.8",
       },
       "peerDependencies": {
         "aws-cdk-lib": "2.265.0",
@@ -54,7 +55,7 @@
     },
     "packages/app-construct": {
       "name": "@fy-stack/app-construct",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "dependencies": {
         "@fy-stack/types": "0.0.147",
         "tslib": "^2.3.0",
@@ -68,7 +69,7 @@
     },
     "packages/auth-construct": {
       "name": "@fy-stack/auth-construct",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "dependencies": {
         "@fy-stack/types": "0.0.147",
         "tslib": "^2.3.0",
@@ -80,10 +81,11 @@
     },
     "packages/cdn-construct": {
       "name": "@fy-stack/cdn-construct",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "dependencies": {
-        "@fy-stack/types": "0.0.147",
+        "@fy-stack/types": "0.0.150-alpha.30003",
         "tslib": "^2.3.0",
+        "vitest": "^4.0.8",
       },
       "peerDependencies": {
         "aws-cdk-lib": "2.265.0",
@@ -92,7 +94,7 @@
     },
     "packages/cli": {
       "name": "@fy-stack/cli",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "bin": {
         "fy-stack": "dist/index.js",
       },
@@ -108,7 +110,7 @@
     },
     "packages/database-construct": {
       "name": "@fy-stack/database-construct",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "dependencies": {
         "@fy-stack/types": "0.0.147",
         "tslib": "^2.3.0",
@@ -120,7 +122,7 @@
     },
     "packages/event-construct": {
       "name": "@fy-stack/event-construct",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "dependencies": {
         "@fy-stack/types": "0.0.147",
         "tslib": "^2.3.0",
@@ -132,7 +134,7 @@
     },
     "packages/fullstack-construct": {
       "name": "@fy-stack/fullstack-construct",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "dependencies": {
         "@fy-stack/apigateway-construct": "0.0.147",
         "@fy-stack/app-construct": "0.0.147",
@@ -152,7 +154,7 @@
     },
     "packages/secret-construct": {
       "name": "@fy-stack/secret-construct",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "dependencies": {
         "@fy-stack/types": "0.0.147",
         "tslib": "^2.3.0",
@@ -164,7 +166,7 @@
     },
     "packages/storage-construct": {
       "name": "@fy-stack/storage-construct",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "dependencies": {
         "@fy-stack/types": "0.0.147",
         "tslib": "^2.3.0",
@@ -176,7 +178,7 @@
     },
     "packages/task-construct": {
       "name": "@fy-stack/task-construct",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "dependencies": {
         "@fy-stack/types": "0.0.147",
         "tslib": "^2.3.0",
@@ -188,7 +190,7 @@
     },
     "packages/types": {
       "name": "@fy-stack/types",
-      "version": "0.0.147",
+      "version": "0.0.150-alpha.30003",
       "dependencies": {
         "tslib": "^2.3.0",
       },

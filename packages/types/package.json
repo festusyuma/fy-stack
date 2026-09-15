@@ -1,6 +1,6 @@
 {
   "name": "@fy-stack/types",
-  "version": "0.0.150",
+  "version": "0.0.150-alpha.30004",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
     "tslib": "^2.3.0"

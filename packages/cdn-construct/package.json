@@ -1,10 +1,11 @@
 {
   "name": "@fy-stack/cdn-construct",
-  "version": "0.0.150",
+  "version": "0.0.150-alpha.30004",
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
-    "@fy-stack/types": "0.0.150",
-    "tslib": "^2.3.0"
+    "@fy-stack/types": "0.0.150-alpha.30004",
+    "tslib": "^2.3.0",
+    "vitest": "^4.0.8"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.265.0",

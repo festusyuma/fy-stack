@@ -1,7 +1,9 @@
 import { Attachable, Grantable } from '@fy-stack/types';
 import { Duration } from 'aws-cdk-lib';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as route53 from 'aws-cdk-lib/aws-route53';
 import { Construct } from 'constructs';
 
 import { AuthConstructProps } from './types';
@@ -16,7 +18,7 @@ import { AuthConstructProps } from './types';
  */
 export class AuthConstruct extends Construct implements Attachable, Grantable {
   public userPool: cognito.UserPool;
-  public domain?: cognito.UserPoolDomain;
+  public domain: cognito.UserPoolDomain;
   public client: cognito.UserPoolClient;
 
   constructor(scope: Construct, id: string, props: AuthConstructProps) {
@@ -26,14 +28,40 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
       deletionProtection: true,
       selfSignUpEnabled: true,
       signInCaseSensitive: false,
+      signInAliases: props.signInAliases,
     });
 
-    if (props.domainPrefix) {
-      this.domain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
-        userPool: this.userPool,
-        cognitoDomain: { domainPrefix: props.domainPrefix },
+    let customDomain: cognito.CustomDomainOptions | undefined = undefined;
+
+    if (props.domain) {
+      const customDomainName = `auth.${props.domain}`;
+
+      const zone = route53.HostedZone.fromLookup(this, 'AppZone', {
+        domainName: customDomainName,
       });
+
+      const certificate = new acm.Certificate(this, 'DomainCertificate', {
+        domainName: customDomainName,
+        validation: acm.CertificateValidation.fromDns(zone),
+      });
+
+      customDomain = {
+        certificate,
+        domainName: customDomainName,
+      };
     }
+
+    this.domain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
+      userPool: this.userPool,
+      ...(customDomain
+        ? { customDomain }
+        : {
+            cognitoDomain: {
+              domainPrefix: `${props.appName}-${props.environment}`,
+            },
+          }),
+      managedLoginVersion: cognito.ManagedLoginVersion.NEWER_MANAGED_LOGIN,
+    });
 
     this.client = new cognito.UserPoolClient(this, 'WebClient', {
       userPool: this.userPool,
@@ -63,21 +91,16 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
   }
 
   attachable() {
-    const params = {
+    return {
       ARN: this?.userPool.userPoolArn,
       ID: this?.userPool.userPoolId,
       CLIENT_ID: this?.client.userPoolClientId,
       CLIENT_SECRET: this?.client.userPoolClientSecret.unsafeUnwrap(),
+      DOMAIN_NAME: this.domain.domainName,
     };
-
-    if (this.domain) {
-      Object.assign(params, { DOMAIN_NAME: this.domain.domainName, })
-    }
-
-    return params
   }
 
   grantable(grant: iam.IGrantable) {
-    this.userPool.grant(grant, 'cognito-idp:*', 'cognito-identity:*')
+    this.userPool.grant(grant, 'cognito-idp:*', 'cognito-identity:*');
   }
 }

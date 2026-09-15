@@ -3,11 +3,13 @@ import type {
   LambdaConstructProps,
   StaticConstructProps,
 } from '@fy-stack/app-construct';
+import type { AuthConstructProps } from '@fy-stack/auth-construct';
 import type { CDNConstructProps } from '@fy-stack/cdn-construct';
 import type { DatabaseConstructProps } from '@fy-stack/database-construct';
 import type { EventConstructProps } from '@fy-stack/event-construct';
 import type { StorageConstructProps } from '@fy-stack/storage-construct';
 import { AppGrant, type ResourceRef } from '@fy-stack/types';
+import type { IRole, IUser } from 'aws-cdk-lib/aws-iam';
 
 /**
  * Attach resource
@@ -27,7 +29,8 @@ export type FullStackConstructProps = {
   name: string;
   environment: string;
   vpcId?: string;
-  auth?: { groups?: string[] };
+  domain?: string;
+  auth?: Omit<AuthConstructProps, 'environment' | 'appName' | 'domain'>;
   storage?: StorageConstructProps;
   database?: DatabaseConstructProps;
   ecs?: Omit<
@@ -66,3 +69,7 @@ export type FullStackConstructProps = {
   outputs?: boolean;
   ownerArn?: string;
 };
+
+export type Owner =
+  | { type: 'user'; principal: IUser }
+  | { type: 'role'; principal: IRole };
