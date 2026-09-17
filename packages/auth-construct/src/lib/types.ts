@@ -1,4 +1,7 @@
-import type { SignInAliases } from 'aws-cdk-lib/aws-cognito';
+import type {
+  SignInAliases,
+  UserPoolClientProps,
+} from 'aws-cdk-lib/aws-cognito';
 
 export interface AuthConstructProps {
   appName: string;
@@ -17,4 +20,5 @@ export interface AuthConstructProps {
     /** Refresh token validity in hours */
     refreshTokenValidity?: number;
   };
+  client?: Partial<UserPoolClientProps>;
 }

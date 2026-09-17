@@ -75,9 +75,9 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
     });
 
     if (domainConfig && props.domain) {
-      const recordName = domainConfig.customDomain.domainName.split(
-        props.domain
-      )[0];
+      const recordName = domainConfig.customDomain.domainName
+        .split(props.domain)[0]
+        .replace(/\.+$/, '');
 
       new route53.ARecord(this, `UserPoolDomainRecord`, {
         recordName,
@@ -98,10 +98,18 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
       accessTokenValidity: Duration.hours(
         props.token?.accessTokenValidity ?? 24
       ),
+      enableTokenRevocation: true,
       refreshTokenValidity: Duration.hours(
         props.token?.refreshTokenValidity ?? 720
       ),
       generateSecret: true,
+      ...(props.client ?? {}),
+    });
+
+    new cognito.CfnManagedLoginBranding(this, 'ManagedLoginStyle', {
+      userPoolId: this.userPool.userPoolId,
+      clientId: this.client.userPoolClientId,
+      useCognitoProvidedValues: true,
     });
 
     if (props.groups?.length) {
