@@ -5,6 +5,7 @@ export interface AuthConstructProps {
   environment: string;
   signInAliases?: SignInAliases;
   domain?: string;
+  domainPrefix?: string[];
   /** User pool group names */
   groups?: string[];
   /**

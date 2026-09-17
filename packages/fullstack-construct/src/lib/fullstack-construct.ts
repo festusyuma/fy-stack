@@ -123,6 +123,7 @@ export class FullStackConstruct extends Construct {
       this.cdn = new CDNConstruct(this, 'CDNConstruct', {
         routes: props.cdn.routes,
         domains: props.cdn.domains,
+        key: props.cdn.key,
         resources: {
           ...resources,
           storage: this.storage,
