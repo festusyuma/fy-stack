@@ -93,3 +93,15 @@ export type StackContext = {
     priorities?: Record<string, number>;
   };
 };
+
+export type Domain = {
+  /**
+   * Domain name
+   * */
+  domain: string;
+  /**
+   * Domain name records to map to distribution,
+   * add "*" for default
+   * */
+  records: string[];
+};

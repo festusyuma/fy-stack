@@ -14,10 +14,12 @@ import { Construct } from 'constructs';
 import { ImageAppConstruct } from './apps/image-app-construct';
 import { NextAppRouterConstruct } from './apps/next-app-router-construct';
 import { AppConstruct, EcsConstructProps } from './types';
+import { ReactRouterConstruct } from './apps/react-router-construct';
 
 const AppBuilds = {
   [AppType.NEXT_APP_ROUTER]: NextAppRouterConstruct,
   [AppType.IMAGE_APP]: ImageAppConstruct,
+  [AppType.REACT_ROUTER]: ReactRouterConstruct,
 };
 
 type EcsServerConstructProps = EcsConstructProps['server'] & {
@@ -85,21 +87,26 @@ export class EcsServerConstruct extends Construct implements Grant {
       ...serverProps,
     });
 
-    const serverOrigin = (
-      port: number,
-      containerName: string,
-      appPath: string,
-      healthPath?: string
-    ) =>
-      this.serverOrigin(this.service, port, containerName, appPath, healthPath);
-
-    serverOrigin.bind(this);
-
     Object.assign(
       this.apps,
       Object.fromEntries(
-        Object.entries(apps).map(([key, app]) => {
+        Object.entries(apps).map(([key, { healthPath, ...app }]) => {
           const AppTypeConstruct = AppBuilds[app.type];
+
+          const serverOrigin = (
+            port: number,
+            containerName: string,
+            appPath: string
+          ) =>
+            this.serverOrigin(
+              this.service,
+              port,
+              containerName,
+              appPath,
+              healthPath
+            );
+
+          serverOrigin.bind(this);
 
           return [
             key,
@@ -110,6 +117,7 @@ export class EcsServerConstruct extends Construct implements Grant {
               buildParams: AppTypeConstruct.parse(app.buildParams ?? {}),
               serverOrigin,
               taskDefinition: this.definition,
+              securityGroup: appSecurityGroup,
               ...app,
             }),
           ];
@@ -152,25 +160,26 @@ export class EcsServerConstruct extends Construct implements Grant {
         ],
         deregistrationDelay: Duration.seconds(10),
         healthCheck: {
-          path: path.join(appFullPath, healthPath ?? ''),
+          path: path.join(appPath, healthPath ?? '/'),
           interval: Duration.seconds(10),
-          healthyThresholdCount: 3
+          healthyThresholdCount: 3,
         },
       }
     );
 
     const origin = new cdnOrigin.LoadBalancerV2Origin(this.loadBalancer.alb, {
-      originPath: appPath ? this.props.environmentPath : appFullPath,
       protocolPolicy: cdn.OriginProtocolPolicy.HTTP_ONLY,
     });
 
     this.loadBalancer.listener.addTargetGroups(`${containerName}Rule`, {
-      conditions: [elbV2.ListenerCondition.pathPatterns([`${appFullPath}/*`])],
+      conditions: [
+        elbV2.ListenerCondition.httpHeader('proxy-path', [appFullPath]),
+      ],
       priority: this.getAppPriority(appFullPath),
       targetGroups: [appTargetGroup],
     });
 
-    return { origin, basePath: appFullPath };
+    return { origin, proxyPath: appFullPath };
   }
 
   initLoadBalancer() {

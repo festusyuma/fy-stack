@@ -21,6 +21,7 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
   public userPool: cognito.UserPool;
   public domain: cognito.UserPoolDomain;
   public client: cognito.UserPoolClient;
+  public tokenExpiration: { access: number; refresh: number };
 
   constructor(scope: Construct, id: string, props: AuthConstructProps) {
     super(scope, id);
@@ -42,11 +43,11 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
     if (props.domain) {
       const customDomainName = [
         ['auth', ...(props.domainPrefix ?? [])].join('-'),
-        props.domain,
+        this.parseDomain(props.domain.records, props.domain.domain),
       ].join('.');
 
       const zone = route53.HostedZone.fromLookup(this, 'AppZone', {
-        domainName: props.domain,
+        domainName: props.domain.domain,
       });
 
       const certificate = new acm.Certificate(this, 'DomainCertificate', {
@@ -76,7 +77,7 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
 
     if (domainConfig && props.domain) {
       const recordName = domainConfig.customDomain.domainName
-        .split(props.domain)[0]
+        .split(props.domain.domain)[0]
         .replace(/\.+$/, '');
 
       new route53.ARecord(this, `UserPoolDomainRecord`, {
@@ -88,6 +89,19 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
       });
     }
 
+    const accessTokenValidity = Duration.minutes(
+      props.token?.accessTokenValidity ?? 30
+    );
+
+    const refreshTokenValidity = Duration.minutes(
+      props.token?.refreshTokenValidity ?? 1440
+    );
+
+    this.tokenExpiration = {
+      access: accessTokenValidity.toSeconds(),
+      refresh: refreshTokenValidity.toSeconds(),
+    };
+
     this.client = new cognito.UserPoolClient(this, 'WebClient', {
       userPool: this.userPool,
       authFlows: {
@@ -95,13 +109,9 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
         userSrp: true,
         adminUserPassword: true,
       },
-      accessTokenValidity: Duration.hours(
-        props.token?.accessTokenValidity ?? 24
-      ),
+      accessTokenValidity,
       enableTokenRevocation: true,
-      refreshTokenValidity: Duration.hours(
-        props.token?.refreshTokenValidity ?? 720
-      ),
+      refreshTokenValidity,
       generateSecret: true,
       ...(props.client ?? {}),
     });
@@ -130,10 +140,17 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
       CLIENT_ID: this?.client.userPoolClientId,
       CLIENT_SECRET: this?.client.userPoolClientSecret.unsafeUnwrap(),
       DOMAIN_NAME: this.domain.baseUrl(),
+      ACCESS_TOKEN_EXPIRATION: this.tokenExpiration.access.toString(),
+      REFRESH_TOKEN_EXPIRATION: this.tokenExpiration.refresh.toString(),
     };
   }
 
   grantable(grant: iam.IGrantable) {
     this.userPool.grant(grant, 'cognito-idp:*', 'cognito-identity:*');
+  }
+
+  private parseDomain(records: string[], domain: string) {
+    if (!records.length || records.includes('*')) return domain;
+    else return `${records[0]}.${domain}`;
   }
 }

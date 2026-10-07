@@ -12,7 +12,6 @@ import { proxyPathHeaderCode } from './proxy-path-header';
 
 export type AppFile = {
   artifactBucket: s3.IBucket;
-  staticFiles?: { deployment?: s3Deploy.BucketDeployment; key: string };
   publicFiles?: { deployment?: s3Deploy.BucketDeployment; key: string };
 };
 
@@ -34,13 +33,6 @@ export function filesFromSSM(
         `/${reference}/${version}/files/publicFiles/key`
       ).stringValue,
     },
-    staticFiles: {
-      key: ssm.StringParameter.fromStringParameterName(
-        scope,
-        `StaticFilesParamV${version}`,
-        `/${reference}/${version}/files/staticFiles/key`
-      ).stringValue,
-    },
   };
 }
 
@@ -48,27 +40,10 @@ export function staticDeployment(
   app: Construct,
   bucket: s3.IBucket,
   output: string,
-  version?: string,
-  standalone = false
+  version?: string
 ) {
-  const staticFiles = s3Deploy.Source.asset(path.join(output, '/.next/static'));
-  const publicFiles = s3Deploy.Source.asset(path.join(output, '/public'));
-
-  const staticPrefix = version ? `${version}/assets/static` : 'assets/static';
+  const publicFiles = s3Deploy.Source.asset(path.join(output, '/client'));
   const publicPrefix = version ? `${version}/assets/public` : 'assets/public';
-
-  const staticDeployment = new s3Deploy.BucketDeployment(
-    app,
-    `StaticAssetDeployment`,
-    {
-      destinationBucket: bucket,
-      sources: [staticFiles],
-      destinationKeyPrefix: staticPrefix,
-      retainOnDelete: standalone,
-      extract: false,
-      memoryLimit: 512,
-    }
-  );
 
   const publicDeployment = new s3Deploy.BucketDeployment(
     app,
@@ -77,34 +52,19 @@ export function staticDeployment(
       destinationBucket: bucket,
       sources: [publicFiles],
       destinationKeyPrefix: publicPrefix,
-      retainOnDelete: standalone,
+      retainOnDelete: true,
       extract: false,
       memoryLimit: 512,
     }
   );
 
-  const files = {
-    staticFiles: {
-      deployment: staticDeployment,
-      key: cdk.Fn.join('/', [
-        staticPrefix,
-        cdk.Fn.select(0, staticDeployment.objectKeys),
-      ]),
-    },
-    publicFiles: {
-      deployment: publicDeployment,
-      key: cdk.Fn.join('/', [
-        publicPrefix,
-        cdk.Fn.select(0, publicDeployment.objectKeys),
-      ]),
-    },
+  return {
+    deployment: publicDeployment,
+    key: cdk.Fn.join('/', [
+      publicPrefix,
+      cdk.Fn.select(0, publicDeployment.objectKeys),
+    ]),
   };
-
-  if (!files.publicFiles || !files.staticFiles) {
-    throw new Error('Failed to deploy static and public files');
-  }
-
-  return { files };
 }
 
 export function cloudfrontBehaviours(
@@ -135,39 +95,13 @@ export function cloudfrontBehaviours(
           ? `${strippedBasePath}/`
           : undefined,
         retainOnDelete: false,
+        prune: false,
         memoryLimit: 512,
       }
     );
 
     if (files.publicFiles.deployment) {
       publicDeployment.node.addDependency(files.publicFiles.deployment);
-    }
-  }
-
-  if (files.staticFiles) {
-    const staticFiles = s3Deploy.Source.bucket(
-      files.artifactBucket,
-      files.staticFiles.key
-    );
-
-    const deployment = new s3Deploy.BucketDeployment(
-      scope,
-      `${strippedBasePath}StaticDeployment`,
-      {
-        destinationBucket: staticBucket,
-        sources: [staticFiles],
-        destinationKeyPrefix: strippedBasePath
-          ? `${strippedBasePath}/_next/static/`
-          : '_next/static/',
-        retainOnDelete: false,
-        memoryLimit: 512,
-      }
-    );
-
-    if (publicDeployment) deployment.node.addDependency(publicDeployment);
-
-    if (files.staticFiles.deployment) {
-      deployment.node.addDependency(files.staticFiles.deployment);
     }
   }
 
@@ -181,18 +115,6 @@ export function cloudfrontBehaviours(
     compress: true,
     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
   };
-
-  const imageCachePolicyID = ssm.StringParameter.fromStringParameterName(
-    scope,
-    'NextAppRouterImagePolicyArn',
-    '/fy-stack/ImagePolicyID'
-  );
-
-  const imageCachePolicy = cloudfront.CachePolicy.fromCachePolicyId(
-    scope,
-    'ImagePolicy',
-    imageCachePolicyID.stringValue
-  );
 
   const appBehaviour: cloudfront.BehaviorOptions = {
     origin: serverOrigin,
@@ -220,11 +142,8 @@ export function cloudfrontBehaviours(
   };
 
   return {
-    [`${basePath}/_next/image`]: Object.assign({}, appBehaviour, {
-      cachePolicy: imageCachePolicy,
-      allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
-    }),
-    [`${basePath}/_next/*`]: staticBehavior,
+    [`${basePath}/assets/*`]: staticBehavior,
+    [`${basePath}/*.data`]: appBehaviour,
     [`${basePath}/*.*`]: staticBehavior,
     [`${basePath}/*`]: appBehaviour,
     [basePath]: appBehaviour,

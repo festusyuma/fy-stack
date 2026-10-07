@@ -15,6 +15,7 @@ import fs from 'node:fs';
 export class CDNConstruct extends Construct implements Attachable {
   public distribution: cloudfront.Distribution;
   public domainName: string | undefined;
+  public publicKey: cloudfront.PublicKey | undefined;
   public keyGroup: cloudfront.KeyGroup | undefined;
 
   constructor(scope: Construct, id: string, props: CDNConstructProps) {
@@ -39,7 +40,7 @@ export class CDNConstruct extends Construct implements Attachable {
     if (!base) throw new Error('no base route');
 
     const { '/*': defaultBehavior, ...additionalDefaultBehaviors } =
-      base.resource.cloudfront('', this.keyGroup);
+      base.resource.cloudfront('', base.private ? this.keyGroup : undefined);
 
     if (!defaultBehavior) throw new Error('no default behaviour');
 
@@ -48,7 +49,7 @@ export class CDNConstruct extends Construct implements Attachable {
     for (const i in otherRoutes) {
       const routeBehaviour = otherRoutes[i]?.resource.cloudfront(
         i,
-        this.keyGroup
+        otherRoutes[i]?.private ? this.keyGroup : undefined
       );
 
       Object.assign(additionalBehaviors, routeBehaviour);
@@ -151,14 +152,12 @@ export class CDNConstruct extends Construct implements Attachable {
   private getKeyGroup(id: string, key?: string) {
     if (!key) return undefined;
 
-    const keys: cloudfront.PublicKey[] = [
-      new cloudfront.PublicKey(this, `CDNPublicKey${id}`, {
-        encodedKey: fs.readFileSync(key).toString(),
-      }),
-    ];
+    this.publicKey = new cloudfront.PublicKey(this, `CDNPublicKey${id}`, {
+      encodedKey: fs.readFileSync(key).toString(),
+    });
 
     return new cloudfront.KeyGroup(this, `CDNKeyGroup${id}`, {
-      items: keys,
+      items: [this.publicKey],
     });
   }
 
@@ -172,8 +171,8 @@ export class CDNConstruct extends Construct implements Attachable {
       DOMAIN: 'https://' + (this.domainName ?? this.distribution.domainName),
     };
 
-    if (this.keyGroup) {
-      payload.KEY_PAIR_ID = this.keyGroup.keyGroupId;
+    if (this.publicKey) {
+      payload.KEY_PAIR_ID = this.publicKey.publicKeyId;
     }
 
     return payload;

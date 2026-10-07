@@ -4,6 +4,7 @@ export const AppType = {
   IMAGE_APP: 'imageApp',
   NEXT_APP_ROUTER: 'nextAppRouter',
   NEXT_PAGE_EXPORT: 'nextPageExport',
+  REACT_ROUTER: 'reactRouter',
   STATIC_WEBSITE: 'staticWebsite',
 } as const;
 

@@ -1,6 +1,6 @@
-import type { CDNResource, ResourceRef } from '@fy-stack/types';
+import type { CDNResource, ResourceRef, Domain } from '@fy-stack/types';
 
-export type RouteProps = { public?: false };
+export type RouteProps = { private?: true };
 
 export interface CDNConstructProps {
   /**
@@ -15,15 +15,5 @@ export interface CDNConstructProps {
   /**
    * A list of domain name records
    * */
-  domains?: {
-    /**
-     * Domain name
-     * */
-    domain: string;
-    /**
-     * Domain name records to map to distribution,
-     * add "*" for default
-     * */
-    records: string[];
-  }[];
+  domains?: Domain[];
 }

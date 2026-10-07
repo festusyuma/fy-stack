@@ -12,33 +12,34 @@ import {
   cloudfrontBehaviours,
   filesFromSSM,
   staticDeployment,
-} from '../../shared/next-app-router';
+} from '../../shared/react-router';
 import { paramsFromAttachable } from '../../shared/params-from-attachable';
 import { publicBucket } from '../../shared/public-bucket';
 import { taskDefinitionImage } from '../shared/taskDefinitionImage';
 import { AppConstruct, AppProperties } from '../types';
 
-type NextAppRouterProps = AppProperties<unknown>;
+type AppConstructProps = AppProperties<unknown>;
 
-export class NextAppRouterConstruct extends Construct implements AppConstruct {
+export class ReactRouterConstruct extends Construct implements AppConstruct {
   public container: ecs.ContainerDefinition;
   public queue: sqs.Queue | undefined;
 
   private readonly static: s3.IBucket;
   private readonly files: AppFile;
 
-  constructor(scope: Construct, id: string, private props: NextAppRouterProps) {
+  constructor(scope: Construct, id: string, private props: AppConstructProps) {
     super(scope, id);
 
     this.static = publicBucket(this, 'StaticBucket');
+
     const artifactBucket = new s3.Bucket(this, 'ArtifactStorage', {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
     });
 
     if ('output' in props) {
-      const deployment = staticDeployment(this, artifactBucket, props.output);
-      this.files = { artifactBucket: artifactBucket, ...deployment.files };
+      const publicFiles = staticDeployment(this, artifactBucket, props.output);
+      this.files = { artifactBucket, publicFiles };
     } else {
       const fileParams = filesFromSSM(this, props.reference, props.version);
       const appArtifact = s3.Bucket.fromBucketName(

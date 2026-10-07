@@ -1,7 +1,7 @@
 import type { ApiResource, Attach, CDNResource } from '@fy-stack/types';
 import { AppType } from '@fy-stack/types';
 import type { LoadBalancerV2Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
-import type { IVpc } from 'aws-cdk-lib/aws-ec2';
+import type { IVpc, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
 import type {
   AssetImageProps,
   Cluster,
@@ -41,7 +41,7 @@ export type EcsConstructProps = {
            *  it helps to be able to create unique priority for environment in this app
            * */
           priorityRange: [number, number];
-          priorityOverride?: Record<string, number>
+          priorityOverride?: Record<string, number>;
         }
       | ApplicationLoadBalancerProps;
   };
@@ -52,6 +52,7 @@ export type AppSource =
   | {
       output: string;
       container?: Omit<ContainerDefinitionOptions, 'image' | 'logging'> & {
+        output?: string;
         image: AssetImageProps;
       };
     }
@@ -62,11 +63,15 @@ export type AppSource =
     };
 
 export type ServerApp = {
-  type: typeof AppType.NEXT_APP_ROUTER | typeof AppType.IMAGE_APP;
+  type:
+    | typeof AppType.NEXT_APP_ROUTER
+    | typeof AppType.IMAGE_APP
+    | typeof AppType.REACT_ROUTER;
   env?: Record<string, string>;
   /** Additional parameters that may be required, this varies based on type */
   buildParams?: Record<string, unknown>;
   port: number;
+  healthPath?: string;
 } & AppSource;
 
 export type TaskApp = {
@@ -81,14 +86,14 @@ export type AppProperties<BuildParams = Record<string, unknown>> = {
   environmentPath: string;
   logGroup: LogGroup;
   taskDefinition: TaskDefinition;
+  securityGroup?: SecurityGroup;
   env?: Record<string, string>;
   buildParams: BuildParams;
   serverOrigin: (
     port: number,
     containerName: string,
-    appPath: string,
-    healthPath?: string
-  ) => { basePath: string; origin: LoadBalancerV2Origin };
+    appPath: string
+  ) => { proxyPath: string; origin: LoadBalancerV2Origin };
   port: number;
 } & AppSource;
 

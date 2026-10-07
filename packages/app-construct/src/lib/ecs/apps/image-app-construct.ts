@@ -4,6 +4,9 @@ import {
   AllowedMethods,
   BehaviorOptions,
   CachePolicy,
+  Function,
+  FunctionEventType,
+  FunctionRuntime,
   OriginRequestPolicy,
   ResponseHeadersPolicy,
   ViewerProtocolPolicy,
@@ -12,6 +15,7 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { Construct } from 'constructs';
 
 import { paramsFromAttachable } from '../../shared/params-from-attachable';
+import { proxyPathHeaderCode } from '../../shared/proxy-path-header';
 import { taskDefinitionImage } from '../shared/taskDefinitionImage';
 import { AppConstruct, AppProperties } from '../types';
 
@@ -39,15 +43,13 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
   }
 
   cloudfront(path: string): Record<string, BehaviorOptions> {
-    const { origin, basePath } = this.props.serverOrigin(
+    const { origin, proxyPath } = this.props.serverOrigin(
       this.props.port,
       this.container.containerName,
-      path,
-      '/health'
+      path
     );
 
     if (!origin) throw new Error('No server origin');
-    this.container.addEnvironment('BASE_PATH', basePath);
 
     const appBehaviour = {
       origin,
@@ -58,6 +60,15 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
       originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
       responseHeadersPolicy:
         ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
+      functionAssociations: [
+        {
+          function: new Function(this, 'ProxyPathHeader', {
+            runtime: FunctionRuntime.JS_2_0,
+            code: proxyPathHeaderCode(proxyPath),
+          }),
+          eventType: FunctionEventType.VIEWER_REQUEST,
+        },
+      ],
     };
 
     return { [`${path}/*`]: appBehaviour };

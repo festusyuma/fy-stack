@@ -1,3 +1,4 @@
+import type { Domain } from '@fy-stack/types';
 import type {
   SignInAliases,
   UserPoolClientProps,
@@ -7,7 +8,7 @@ export interface AuthConstructProps {
   appName: string;
   environment: string;
   signInAliases?: SignInAliases;
-  domain?: string;
+  domain?: Domain;
   domainPrefix?: string[];
   /** User pool group names */
   groups?: string[];
@@ -15,9 +16,9 @@ export interface AuthConstructProps {
    * Token options
    * */
   token?: {
-    /** Access token validity in hours */
+    /** Access token validity in minutes */
     accessTokenValidity?: number;
-    /** Refresh token validity in hours */
+    /** Refresh token validity in minutes */
     refreshTokenValidity?: number;
   };
   client?: Partial<UserPoolClientProps>;

@@ -122,7 +122,10 @@ export class FullStackConstruct extends Construct {
     if (props.cdn) {
       this.cdn = new CDNConstruct(this, 'CDNConstruct', {
         routes: props.cdn.routes,
-        domains: props.cdn.domains,
+        domains: [
+          ...(props.domain ? [props.domain] : []),
+          ...(props.cdn.domains ?? []),
+        ],
         key: props.cdn.key,
         resources: {
           ...resources,
