@@ -146,6 +146,6 @@ export function cloudfrontBehaviours(
     [`${basePath}/*.data`]: appBehaviour,
     [`${basePath}/*.*`]: staticBehavior,
     [`${basePath}/*`]: appBehaviour,
-    [basePath]: appBehaviour,
+    ...(basePath ? { [basePath]: appBehaviour } : {}),
   };
 }
