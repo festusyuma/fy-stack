@@ -13,8 +13,8 @@ import { Construct } from 'constructs';
 
 import { ImageAppConstruct } from './apps/image-app-construct';
 import { NextAppRouterConstruct } from './apps/next-app-router-construct';
-import { AppConstruct, EcsConstructProps } from './types';
 import { ReactRouterConstruct } from './apps/react-router-construct';
+import { AppConstruct, EcsConstructProps } from './types';
 
 const AppBuilds = {
   [AppType.NEXT_APP_ROUTER]: NextAppRouterConstruct,

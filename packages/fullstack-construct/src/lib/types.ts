@@ -8,7 +8,7 @@ import type { CDNConstructProps } from '@fy-stack/cdn-construct';
 import type { DatabaseConstructProps } from '@fy-stack/database-construct';
 import type { EventConstructProps } from '@fy-stack/event-construct';
 import type { StorageConstructProps } from '@fy-stack/storage-construct';
-import { AppGrant, type ResourceRef, type Domain } from '@fy-stack/types';
+import { AppGrant, type Domain,type ResourceRef } from '@fy-stack/types';
 import type { IRole, IUser } from 'aws-cdk-lib/aws-iam';
 
 /**

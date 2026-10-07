@@ -7,14 +7,14 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
+import { paramsFromAttachable } from '../../shared/params-from-attachable';
+import { publicBucket } from '../../shared/public-bucket';
 import {
   AppFile,
   cloudfrontBehaviours,
   filesFromSSM,
   staticDeployment,
 } from '../../shared/react-router';
-import { paramsFromAttachable } from '../../shared/params-from-attachable';
-import { publicBucket } from '../../shared/public-bucket';
 import { taskDefinitionImage } from '../shared/taskDefinitionImage';
 import { AppConstruct, AppProperties } from '../types';
 

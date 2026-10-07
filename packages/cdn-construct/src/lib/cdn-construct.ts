@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 import type { Attachable, CDNResource } from '@fy-stack/types';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
@@ -6,7 +8,6 @@ import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 
 import { CDNConstructProps, RouteProps } from './types';
-import fs from 'node:fs';
 
 /**
  * CDNConstruct is a custom construct that sets up a CloudFront distribution

@@ -1,4 +1,4 @@
-import type { CDNResource, ResourceRef, Domain } from '@fy-stack/types';
+import type { CDNResource, Domain,ResourceRef } from '@fy-stack/types';
 
 export type RouteProps = { private?: true };
 
