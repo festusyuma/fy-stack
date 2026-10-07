@@ -4,8 +4,10 @@
   "repository": "https://github.com/festusyuma/fy-stack",
   "dependencies": {
     "@fy-stack/types": "0.0.150",
-    "tslib": "^2.3.0",
-    "vitest": "^4.0.8"
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.11"
   },
   "peerDependencies": {
     "aws-cdk-lib": "2.265.0",
