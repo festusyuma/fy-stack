@@ -146,6 +146,8 @@ export class EcsServerConstruct extends Construct implements Grant {
       appPath || '/base'
     );
 
+    const { interval, ...healthCheck } = this.props.healthCheck ?? {};
+
     const appTargetGroup = new elbV2.ApplicationTargetGroup(
       this,
       `${containerName}Target`,
@@ -161,8 +163,9 @@ export class EcsServerConstruct extends Construct implements Grant {
         deregistrationDelay: Duration.seconds(10),
         healthCheck: {
           path: path.join(appPath, healthPath ?? '/'),
-          interval: Duration.seconds(10),
+          interval: Duration.seconds(this.props.healthCheck?.interval ?? 30),
           healthyThresholdCount: 3,
+          ...healthCheck,
         },
       }
     );

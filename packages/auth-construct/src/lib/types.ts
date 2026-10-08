@@ -2,6 +2,7 @@ import type { Domain } from '@fy-stack/types';
 import type {
   SignInAliases,
   UserPoolClientProps,
+  CfnManagedLoginBrandingProps
 } from 'aws-cdk-lib/aws-cognito';
 
 export interface AuthConstructProps {
@@ -22,4 +23,5 @@ export interface AuthConstructProps {
     refreshTokenValidity?: number;
   };
   client?: Partial<UserPoolClientProps>;
+  managedLogin?: Partial<CfnManagedLoginBrandingProps>;
 }

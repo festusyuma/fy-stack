@@ -124,7 +124,7 @@ export function cloudfrontBehaviours(
     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
     originRequestPolicy: isLambda
       ? cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER
-      : cloudfront.OriginRequestPolicy.ALL_VIEWER,
+      : cloudfront.OriginRequestPolicy.ALL_VIEWER_AND_CLOUDFRONT_2022,
     responseHeadersPolicy:
       cloudfront.ResponseHeadersPolicy
         .CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,

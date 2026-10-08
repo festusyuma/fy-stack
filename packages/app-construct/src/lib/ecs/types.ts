@@ -10,7 +10,10 @@ import type {
   FargateTaskDefinitionProps,
   TaskDefinition,
 } from 'aws-cdk-lib/aws-ecs';
-import type { ApplicationLoadBalancerProps } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import type {
+  ApplicationLoadBalancerProps,
+  HealthCheck,
+} from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import type { LogGroup } from 'aws-cdk-lib/aws-logs';
 
 export type EcsConstructProps = {
@@ -44,6 +47,12 @@ export type EcsConstructProps = {
           priorityOverride?: Record<string, number>;
         }
       | ApplicationLoadBalancerProps;
+    healthCheck?: Omit<HealthCheck, 'interval'> & {
+      /**
+       * Health check interval in seconds.
+       * */
+      interval?: number;
+    };
   };
   tasks?: Record<string, TaskApp>;
 };

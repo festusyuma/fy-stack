@@ -120,6 +120,7 @@ export class AuthConstruct extends Construct implements Attachable, Grantable {
       userPoolId: this.userPool.userPoolId,
       clientId: this.client.userPoolClientId,
       useCognitoProvidedValues: true,
+      ...(props.managedLogin ?? {}),
     });
 
     if (props.groups?.length) {
