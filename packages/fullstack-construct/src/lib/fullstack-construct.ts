@@ -19,14 +19,14 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 
-import { AppAttachment, FullStackConstructProps } from './types';
+import { AppAttachment, FullStackConstructProps, Owner } from './types';
 
 /**
  *
  */
 export class FullStackConstruct extends Construct {
   public vpc?: ec2.IVpc;
-  public owner?: iam.IUser | iam.IRole;
+  public owner?: Owner;
   public auth?: AuthConstruct;
   public storage?: StorageConstruct;
   public storagePolicy?: string;
@@ -56,7 +56,10 @@ export class FullStackConstruct extends Construct {
 
     if (props.auth) {
       this.auth = new AuthConstruct(this, 'AuthConstruct', {
-        groups: props.auth.groups,
+        appName: props.name,
+        environment: props.environment,
+        domain: props.domain,
+        ...props.auth,
       });
     }
 
@@ -119,7 +122,11 @@ export class FullStackConstruct extends Construct {
     if (props.cdn) {
       this.cdn = new CDNConstruct(this, 'CDNConstruct', {
         routes: props.cdn.routes,
-        domains: props.cdn.domains,
+        domains: [
+          ...(props.domain ? [props.domain] : []),
+          ...(props.cdn.domains ?? []),
+        ],
+        key: props.cdn.key,
         resources: {
           ...resources,
           storage: this.storage,
@@ -226,7 +233,11 @@ export class FullStackConstruct extends Construct {
     Tags.of(scope).add('Environment', props.environment);
 
     if (this.owner) {
-      this.owner.addToPrincipalPolicy(
+      const appPolicy = new iam.Policy(this, 'AppPolicy', {
+        policyName: `${props.name}-${props.environment}-AppPolicy`,
+      });
+
+      appPolicy.addStatements(
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['*'],
@@ -247,16 +258,22 @@ export class FullStackConstruct extends Construct {
             resources: [
               'arn:aws:s3:::' + this.storage.bucket.bucketName + '/*',
             ],
-            principals: [this.owner],
+            principals: [this.owner.principal],
           })
         );
 
-        this.owner.addToPrincipalPolicy(
+        appPolicy.addStatements(
           new iam.PolicyStatement({
             actions: ['s3:*'],
             resources: [this.storage.bucket.bucketArn],
           })
         );
+      }
+
+      if (this.owner.type === 'role') {
+        appPolicy.attachToRole(this.owner.principal);
+      } else {
+        appPolicy.attachToUser(this.owner.principal);
       }
     }
   }
@@ -294,18 +311,24 @@ export class FullStackConstruct extends Construct {
     }
   }
 
-  private ownerFromArn(ownerArn?: string) {
+  private ownerFromArn(ownerArn?: string): Owner | undefined {
     if (!ownerArn) return;
 
     const [arn] = ownerArn.split('/');
     const resourceType = arn.split(':').at(-1);
 
     if (resourceType === 'user') {
-      return iam.User.fromUserArn(this, 'Owner', ownerArn);
+      return {
+        type: 'user',
+        principal: iam.User.fromUserArn(this, 'Owner', ownerArn),
+      };
     }
 
     if (resourceType === 'role') {
-      return iam.Role.fromRoleArn(this, 'Owner', ownerArn);
+      return {
+        type: 'role',
+        principal: iam.Role.fromRoleArn(this, 'Owner', ownerArn),
+      };
     }
 
     return;

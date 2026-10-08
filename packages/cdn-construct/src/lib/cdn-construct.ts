@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 import type { Attachable, CDNResource } from '@fy-stack/types';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
@@ -14,11 +16,14 @@ import { CDNConstructProps, RouteProps } from './types';
 export class CDNConstruct extends Construct implements Attachable {
   public distribution: cloudfront.Distribution;
   public domainName: string | undefined;
+  public publicKey: cloudfront.PublicKey | undefined;
+  public keyGroup: cloudfront.KeyGroup | undefined;
 
   constructor(scope: Construct, id: string, props: CDNConstructProps) {
     super(scope, id);
 
     const routes: Record<string, { resource: CDNResource } & RouteProps> = {};
+    this.keyGroup = this.getKeyGroup('Base', props.key);
 
     Object.assign(
       routes,
@@ -36,14 +41,18 @@ export class CDNConstruct extends Construct implements Attachable {
     if (!base) throw new Error('no base route');
 
     const { '/*': defaultBehavior, ...additionalDefaultBehaviors } =
-      base.resource.cloudfront('');
+      base.resource.cloudfront('', base.private ? this.keyGroup : undefined);
 
     if (!defaultBehavior) throw new Error('no default behaviour');
 
     const additionalBehaviors: Record<string, cloudfront.BehaviorOptions> = {};
 
     for (const i in otherRoutes) {
-      const routeBehaviour = otherRoutes[i]?.resource.cloudfront(i);
+      const routeBehaviour = otherRoutes[i]?.resource.cloudfront(
+        i,
+        otherRoutes[i]?.private ? this.keyGroup : undefined
+      );
+
       Object.assign(additionalBehaviors, routeBehaviour);
     }
 
@@ -141,14 +150,32 @@ export class CDNConstruct extends Construct implements Attachable {
     }
   }
 
+  private getKeyGroup(id: string, key?: string) {
+    if (!key) return undefined;
+
+    this.publicKey = new cloudfront.PublicKey(this, `CDNPublicKey${id}`, {
+      encodedKey: fs.readFileSync(key).toString(),
+    });
+
+    return new cloudfront.KeyGroup(this, `CDNKeyGroup${id}`, {
+      items: [this.publicKey],
+    });
+  }
+
   private parseDomain(record: string, domain: string) {
     if (record === '*') return domain;
     else return `${record}.${domain}`;
   }
 
   attachable(): Record<string, string> {
-    return {
-      domain: 'https://' + (this.domainName ?? this.distribution.domainName),
+    const payload: Record<string, string> = {
+      DOMAIN: 'https://' + (this.domainName ?? this.distribution.domainName),
     };
+
+    if (this.publicKey) {
+      payload.KEY_PAIR_ID = this.publicKey.publicKeyId;
+    }
+
+    return payload;
   }
 }
