@@ -1,62 +1,127 @@
+# @fy-stack/types
 
-# FY-Stack Types
+Shared TypeScript interfaces, types, and constants used across `@fy-stack` constructs for resource attachment, IAM permission grants, and integrations with CloudFront, SNS/EventBridge, and API Gateway.
 
-This module defines several interfaces for managing FY-Stack resources. These interfaces support actions like attaching resources, granting permissions, and integrating with CloudFront, SNS, and API Gateway.
+## Installation
+
+```bash
+npm install @fy-stack/types
+```
+
+## Constants & Enums
+
+### `AppType`
+
+Supported application types across Lambda, ECS, and Static constructs:
+
+| Constant | Value | Description |
+|---|---|---|
+| `AppType.NODE_APP` | `'nodeApp'` | Standard Node.js Lambda application |
+| `AppType.NODE_API` | `'nestApi'` | Web-adapter-backed Node.js HTTP API (e.g. NestJS) |
+| `AppType.IMAGE_APP` | `'imageApp'` | Docker container image application (Lambda or ECS) |
+| `AppType.NEXT_APP_ROUTER` | `'nextAppRouter'` | Next.js App Router (standalone server + static assets on Lambda or ECS) |
+| `AppType.REACT_ROUTER` | `'reactRouter'` | React Router server-rendered application (ECS) |
+| `AppType.NEXT_PAGE_EXPORT` | `'nextPageExport'` | Static Next.js export (`StaticConstruct`) |
+| `AppType.STATIC_WEBSITE` | `'staticWebsite'` | Static website / SPA (`StaticConstruct`) |
+
+### `AppGrant`
+
+Identifiers for infrastructure resources that can grant IAM permissions to compute constructs:
+
+| Constant | Value |
+|---|---|
+| `AppGrant.AUTH` | `'auth'` |
+| `AppGrant.STORAGE` | `'storage'` |
+| `AppGrant.DATABASE` | `'database'` |
+| `AppGrant.SECRET` | `'secret'` |
+| `AppGrant.EVENT` | `'event'` |
 
 ## Interfaces
 
 ### `Attachable`
-Represents a resource that can be attached to other resources.
 
-- **Method**
-    - `attachable(): Record<string, string>` 
-      Returns a set of key-value pairs representing the attributes needed to attach this resource to another. The keys and values in the returned object are specific to the resource.
+Represents a resource whose configuration/connection metadata can be attached to other resources (e.g. as environment variables or secret values).
+
+- **`attachable(): Record<string, string>`**
+  Returns key-value pairs representing the attributes needed to connect to or reference this resource.
 
 ### `Attach`
-Represents a resource that can attach `Attachable` resources to itself.
 
-- **Method**
-    - `attach(attachable: Record<string, Attachable>): void`
-      Takes an object of `Attachable` resources and attaches each to the current resource. The `Attachable` resources are provided as a map, where each key-value pair represents a resource to be attached.
+Represents a compute resource that can receive `Attachable` resources.
+
+- **`attach(attachable: Record<string, Attachable>): void`**
+  Accepts a map of named `Attachable` resources and injects their attributes (prefixed with `<KEY>_` in uppercase) into the target resource's environment.
 
 ### `Grantable`
-Represents a resource that can grant permissions to other resources.
 
-- **Method**
-    - `grantable(grant: IGrantable): void`
-      Accepts an `IGrantable` object and grants it the necessary permissions to interact with this resource.
+Represents a resource that can grant IAM permissions to an `IGrantable` principal.
+
+- **`grantable(grant: IGrantable): void`**
+  Grants the necessary IAM permissions to interact with this resource.
 
 ### `Grant`
-Represents a resource that can be granted permissions by other resources.
 
-- **Method**
-    - `grant(...grantables: Grantable[]): void`
-      Accepts multiple `Grantable` resources and initializes permission grants for each. This allows the resource to manage permission relationships with multiple other resources.
+Represents a compute resource that can receive IAM permission grants from one or more `Grantable` resources.
+
+- **`grant(...grantables: Grantable[]): void`**
+  Initializes permission grants for each provided `Grantable` resource on the compute resource's execution/task role.
 
 ### `CDNResource`
-Represents a resource that can be associated with a CloudFront distribution.
 
-- **Method**
-    - `cloudfront(path: string): Record<string, BehaviorOptions>`
-      Generates and returns a mapping of paths to CloudFront `BehaviorOptions`, which define how the resource should behave when distributed via CloudFront.
+Represents a resource that can be exposed behind a CloudFront distribution.
 
-### `Event`
-Represents a resource that can subscribe to an SNS topic.
+- **`cloudfront(path: string, keys?: KeyGroup): Record<string, BehaviorOptions>`**
+  Generates a mapping of route path patterns to CloudFront `BehaviorOptions`, optionally restricting access via a CloudFront `KeyGroup`.
+- **`cloudfrontPolicy(distributionId: string): unknown`**
+  Generates a resource policy statement (as JSON) granting the CloudFront distribution access to the resource (when applicable, e.g. S3 storage).
 
-- **Method**
-    - `subscription(props: SubscriptionProps): ITopicSubscription`
-      Subscribes the resource to an SNS topic using the provided subscription properties. Returns an `ITopicSubscription` object representing the subscription.
+### `EventResource`
+
+Represents a resource that can subscribe to an SNS topic to handle events.
+
+- **`subscription(props: SubscriptionProps): ITopicSubscription`**
+  Subscribes the resource to an SNS topic using the provided subscription properties (such as message filter policies).
 
 ### `ApiResource`
-Represents a resource that can be integrated with an API Gateway.
 
-- **Method**
-    - `api(path: string): Record<string, HttpRouteIntegration>`
-      Generates a mapping of paths to API Gateway `HttpRouteIntegration`, allowing the resource to be exposed via an API Gateway route.
+Represents a resource that can be exposed via an HTTP API Gateway (`HttpApi`).
 
-### `ResourceRef`
-A type definition for referencing existing resources within an application, identified by name.
+- **`api(path: string): Record<string, HttpRouteIntegration>`**
+  Generates a map of route paths to API Gateway `HttpRouteIntegration` instances.
 
-- **Properties**
-    - `$resource: T`
-      Represents the name of the application or resource, allowing it to be referenced by name within the system. This is useful for referencing resources like `auth` or `uploads`.
+## Utility Types
+
+### `ResourceRef<T extends string = string>`
+
+References a named application or resource within a construct configuration (e.g. in CDN or API Gateway route maps).
+
+```ts
+type ResourceRef<T extends string = string> = {
+  $resource: T;
+};
+```
+
+### `Domain`
+
+Custom domain and subdomain record configuration used by `CDNConstruct`, `AuthConstruct`, and `FullStackConstruct`.
+
+```ts
+type Domain = {
+  /** Root domain name (e.g. "example.com") */
+  domain: string;
+  /** Subdomain records to map (use "*" for the root/apex domain) */
+  records: string[];
+};
+```
+
+### `StackContext`
+
+Persisted context format (written to `fy-stack.context.json`) used to track deterministic ALB listener rule priorities across deployments.
+
+```ts
+type StackContext = {
+  loadBalancer?: {
+    priorities?: Record<string, number>;
+  };
+};
+```

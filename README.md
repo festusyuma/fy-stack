@@ -16,27 +16,27 @@ This is an [Nx](https://nx.dev) monorepo. Each package below is independently pu
 
 | Package | Description |
 |---|---|
-| [`@fy-stack/auth-construct`](packages/auth-construct/README.md) | Amazon Cognito user pool, domain, and client, with configurable auth flows and user groups. |
-| [`@fy-stack/storage-construct`](packages/storage-construct/README.md) | S3 bucket with CORS and CloudFront integration. |
-| [`@fy-stack/database-construct`](packages/database-construct/README.md) | RDS database instance with associated Secrets Manager credentials. |
-| [`@fy-stack/secret-construct`](packages/secret-construct/README.md) | Secrets Manager secret shared across an application's resources. |
-| [`@fy-stack/event-construct`](packages/event-construct/README.md) | SNS topic and scheduled (cron) event routing to Lambda/ECS handlers. |
-| [`@fy-stack/apigateway-construct`](packages/apigateway-construct/README.md) | HTTP API Gateway with route mappings and integrations. |
-| [`@fy-stack/cdn-construct`](packages/cdn-construct/README.md) | CloudFront distribution that routes requests to compute, static, and storage resources. |
-| [`@fy-stack/app-construct`](packages/app-construct/README.md) | Compute constructs for deploying applications to Lambda and ECS Fargate, plus static site deployment. |
-| [`@fy-stack/task-construct`](packages/task-construct/README.md) | Fargate task definitions for one-off and background processing. |
+| [`@fy-stack/auth-construct`](packages/auth-construct/README.md) | Amazon Cognito user pool, custom/hosted domain, client, managed login branding, and user groups. |
+| [`@fy-stack/storage-construct`](packages/storage-construct/README.md) | S3 bucket with CORS, optional DynamoDB log table, and CloudFront OAC integration. |
+| [`@fy-stack/database-construct`](packages/database-construct/README.md) | RDS database instance and user credentials managed in Secrets Manager. |
+| [`@fy-stack/secret-construct`](packages/secret-construct/README.md) | Secrets Manager secret aggregating attached resource attributes and static secrets. |
+| [`@fy-stack/event-construct`](packages/event-construct/README.md) | SNS topic & EventBridge scheduled event routing (`EventConstruct`) plus AppSync Event WebSocket APIs (`WebsocketConstruct`). |
+| [`@fy-stack/apigateway-construct`](packages/apigateway-construct/README.md) | HTTP API Gateway with CORS preflight and route integrations. |
+| [`@fy-stack/cdn-construct`](packages/cdn-construct/README.md) | CloudFront distribution with multi-zone ACM certificates, Route53 records, and signed URL key groups. |
+| [`@fy-stack/app-construct`](packages/app-construct/README.md) | Compute constructs for Lambda and ECS Fargate, static site deployment, and standalone artifact publishers. |
+| [`@fy-stack/task-construct`](packages/task-construct/README.md) | Fargate task definitions triggered via SNS, SQS, and EventBridge Pipes. |
 
 ### Shared
 
 | Package | Description |
 |---|---|
-| [`@fy-stack/types`](packages/types/README.md) | Shared interfaces (`Attachable`, `Grantable`, `CDNResource`, `Event`, `ApiResource`, `ResourceRef`) used across all constructs to attach, grant, and integrate resources with each other. |
+| [`@fy-stack/types`](packages/types/README.md) | Shared interfaces (`Attachable`, `Attach`, `Grantable`, `Grant`, `CDNResource`, `EventResource`, `ApiResource`), types (`ResourceRef`, `Domain`, `StackContext`), and enums (`AppType`, `AppGrant`). |
 
 ### CLI
 
 | Package | Description |
 |---|---|
-| [`@fy-stack/cli`](packages/cli/README.md) | `fy-stack init` scaffolds application infrastructure, with optional GitHub deployment and domain setup. |
+| [`@fy-stack/cli`](packages/cli/README.md) | `fy-stack init` scaffolds application infrastructure, AWS OIDC + GitHub Actions deployment workflows, and CloudFront image cache policies. |
 
 ## Quick start
 

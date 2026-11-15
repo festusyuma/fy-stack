@@ -1,8 +1,10 @@
-import type { CDNResource, Domain,ResourceRef } from '@fy-stack/types';
+import type { CDNResource, Domain, ResourceRef } from '@fy-stack/types';
 
 export type RouteProps = { private?: true };
 
 export interface CDNConstructProps {
+  /** App name */
+  name?: string;
   /**
    * A mapping of route paths to resource references
    * */

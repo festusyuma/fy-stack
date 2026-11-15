@@ -121,6 +121,7 @@ export class FullStackConstruct extends Construct {
 
     if (props.cdn) {
       this.cdn = new CDNConstruct(this, 'CDNConstruct', {
+        name: props.name,
         routes: props.cdn.routes,
         domains: [
           ...(props.domain ? [props.domain] : []),
@@ -138,6 +139,10 @@ export class FullStackConstruct extends Construct {
           key: 'cdnURl',
           value: 'https://' + this.cdn.distribution.domainName,
         });
+      }
+
+      if (this.auth?.domain) {
+        this.auth.domain.node.addDependency(this.cdn);
       }
     }
 
@@ -193,11 +198,11 @@ export class FullStackConstruct extends Construct {
       }
 
       for (const i in this.ecs.tasks) {
-        if (props.ecs.tasks[i]?.grants) {
+        if (props.ecs.tasks?.[i]?.grants) {
           this.fromGrants(this.ecs.tasks[i], props.ecs.tasks[i]?.grants);
         }
 
-        if (props.ecs.tasks[i]?.attachment) {
+        if (props.ecs.tasks?.[i]?.attachment) {
           this.fromAttachments(
             this.ecs.tasks[i],
             props.ecs.tasks[i]?.attachment

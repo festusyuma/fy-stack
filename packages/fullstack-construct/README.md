@@ -10,6 +10,7 @@ A high-level AWS CDK construct that wires together the full suite of `@fy-stack`
   - [name](#name)
   - [environment](#environment)
   - [vpcId](#vpcid)
+  - [domain](#domain)
   - [ownerArn](#ownerarn)
   - [outputs](#outputs)
   - [auth](#auth)
@@ -131,6 +132,24 @@ vpcId: 'vpc-0abc1234def56789'
 
 ---
 
+### `domain`
+
+**Type:** `Domain` (`{ domain: string; records: string[] }`) — **Optional**
+
+Root custom domain configuration shared across authentication and CDN:
+
+- Passed to `AuthConstruct` to provision a custom Cognito domain (`auth[-<domainPrefix>].<domain>`) with a DNS-validated ACM certificate and Route53 alias record.
+- Automatically prepended to `cdn.domains` when `cdn` is configured.
+
+```typescript
+domain: {
+  domain: 'example.com',
+  records: ['*'],
+}
+```
+
+---
+
 ### `ownerArn`
 
 **Type:** `string` — **Optional**
@@ -162,17 +181,28 @@ outputs: true
 
 ### `auth`
 
-**Type:** `{ groups?: string[] }` — **Optional**
+**Type:** `Omit<AuthConstructProps, 'environment' | 'appName' | 'domain'>` — **Optional**
 
-Provisions an [Amazon Cognito](https://aws.amazon.com/cognito/) user pool with a client and optional domain. When omitted, no authentication infrastructure is created.
+Provisions an [Amazon Cognito](https://aws.amazon.com/cognito/) user pool, user pool domain, user pool client, and managed login branding (`CfnManagedLoginBranding`). When omitted, no authentication infrastructure is created.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `groups` | `string[]` | Names of Cognito user pool groups to create |
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `groups` | `string[]` | — | Names of Cognito user pool groups to create (with ascending precedence) |
+| `signInAliases` | `SignInAliases` | — | Cognito sign-in aliases (e.g. `{ email: true }`) |
+| `domainPrefix` | `string[]` | — | Additional prefix segments joined to `auth` when a custom `domain` is configured |
+| `token.accessTokenValidity` | `number` | `30` | Access token validity in **minutes** |
+| `token.refreshTokenValidity` | `number` | `1440` | Refresh token validity in **minutes** (24 hours) |
+| `client` | `Partial<UserPoolClientProps>` | — | Overrides merged into the Cognito `UserPoolClient` |
+| `managedLogin` | `Partial<CfnManagedLoginBrandingProps>` | — | Overrides merged into `CfnManagedLoginBranding` (`useCognitoProvidedValues: true` by default) |
 
 ```typescript
 auth: {
   groups: ['admin', 'moderators', 'users'],
+  signInAliases: { email: true },
+  token: {
+    accessTokenValidity: 60,
+    refreshTokenValidity: 1440,
+  },
 }
 ```
 
@@ -180,9 +210,9 @@ auth: {
 - Self sign-up is enabled.
 - Deletion protection is enabled.
 - Sign-in is case-insensitive.
+- Managed login version: `NEWER_MANAGED_LOGIN`.
 - Auth flows: `userPassword`, `userSrp`, `adminUserPassword`.
-- Access token validity: 24 hours.
-- Refresh token validity: 720 hours (30 days).
+- Token revocation and client secret generation are enabled.
 
 ---
 
@@ -190,19 +220,17 @@ auth: {
 
 **Type:** `StorageConstructProps` — **Optional**
 
-Provisions an S3 bucket with CORS enabled for `GET`, `PUT`, and `DELETE` requests. All public access is blocked by default.
+Provisions an S3 bucket with CORS enabled for `GET`, `PUT`, and `DELETE` requests (`ETag` exposed). All public access is blocked by default.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `retainOnDelete` | `boolean` | `false` | Keep the bucket when the stack is deleted |
-| `logTable` | `boolean` | `false` | Create a DynamoDB table for access logging |
-| `keys` | `string[]` | — | CloudFront key pair IDs for signed URL support. Creates a CloudFront `KeyGroup` when provided |
+| `retainOnDelete` | `boolean` | `false` | Keep the bucket when the stack is deleted (otherwise `DESTROY` with `autoDeleteObjects: true`) |
+| `logTable` | `boolean` | `false` | Create a pay-per-request DynamoDB table (`key` partition key) for access logging |
 
 ```typescript
 storage: {
   retainOnDelete: true,
   logTable: true,
-  keys: ['K2JCJMDEHXQW5F'],
 }
 ```
 
@@ -216,9 +244,9 @@ Provisions an RDS database instance inside the VPC. Extends the CDK `DatabaseIns
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `engine` | `IInstanceEngine` | — | RDS engine (e.g. `DatabaseInstanceEngine.postgres(...)`) |
-| `instance` | `{ class: InstanceClass; size: InstanceSize }` | — | EC2 instance type for the database |
-| `public` | `boolean` | `false` | Whether the instance is publicly accessible |
+| `engine` | `IInstanceEngine` | `DatabaseInstanceEngine.POSTGRES` | RDS engine (e.g. `DatabaseInstanceEngine.postgres(...)`) |
+| `instance` | `{ class: InstanceClass; size: InstanceSize }` | `T4G.MICRO` | EC2 instance type for the database |
+| `public` | `boolean` | `false` | Whether the instance is publicly accessible (`PUBLIC` vs `PRIVATE_ISOLATED` subnets) |
 | `useDefault` | `boolean` | — | Use the default database configuration |
 
 All other `DatabaseInstanceProps` fields (except `instanceType`, `databaseName`, `publiclyAccessible`, `engine`, and `vpc` — which are managed internally) are passed through.
@@ -244,18 +272,21 @@ database: {
 
 **Type:** `Record<string, LambdaApp>` — **Optional**
 
-A map of named Lambda functions to deploy. Each key becomes the function's logical name and is used as the resource identifier in `cdn.routes` and `api.routes`.
+A map of named Lambda functions to deploy. Each key becomes the function's logical name and is used as the resource identifier in `cdn.routes`, `api.routes`, and `event.handlers`.
 
-Each entry extends the base `App` type with two additional fields:
+Each entry supports either a local build directory (`output` + `cmd`) or an SSM-backed standalone artifact (`reference` + optional `version`):
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `type` | `AppType` | One of `NODE_APP`, `NODE_API`, `IMAGE_APP`, `NEXT_APP_ROUTER` |
-| `output` | `string` | Path to the built application directory |
+| `output` | `string` | Path to the built application directory (when deploying from local assets) |
+| `cmd` | `string` | Startup command written to `run.sh` (used by `NODE_API`; for `NEXT_APP_ROUTER` pass `buildParams.cmd`) |
+| `reference` | `string` | Standalone stack name in SSM Parameter Store (alternative to `output`) |
+| `version` | `string` | Artifact version tag in SSM (defaults to `'latest'` when using `reference`) |
 | `env` | `Record<string, string>` | Static environment variables injected at deploy time |
-| `timeout` | `number` | Function timeout in seconds |
-| `queue` | `{ batchSize?: number } & QueueProps` | Attach an SQS queue as an event source |
-| `buildParams` | `Partial<FunctionProps>` | CDK `FunctionProps` overrides (e.g. `memorySize`, `reservedConcurrentExecutions`) |
+| `timeout` | `number` | Function timeout in seconds (default: `30`) |
+| `queue` | `{ batchSize?: number } & Partial<QueueProps>` | Attach an SQS queue as an event source |
+| `buildParams` | `Partial<FunctionProps> & Record<string, unknown>` | CDK `FunctionProps` overrides (e.g. `memorySize`, `handler`, `cmd`, `container`) |
 | `grants` | `AppGrant[]` | Permissions to grant to the function — see [AppGrant](#appgrant) |
 | `attachment` | `AppAttachment` | Resources to attach as environment variables — see [AppAttachment](#appattachment) |
 
@@ -264,6 +295,7 @@ lambda: {
   api: {
     type: AppType.NODE_API,
     output: 'dist/apps/api',
+    cmd: 'node main.js',
     timeout: 30,
     buildParams: {
       memorySize: 512,
@@ -281,6 +313,7 @@ lambda: {
   worker: {
     type: AppType.NODE_APP,
     output: 'dist/apps/worker',
+    cmd: 'index.handler',
     queue: { batchSize: 5 },
     grants: [AppGrant.DATABASE, AppGrant.SECRET],
     attachment: { database: true, secret: true },
@@ -294,39 +327,44 @@ lambda: {
 
 **Type:** `EcsConfig` — **Optional**
 
-Provisions an ECS cluster with Fargate. Supports long-running services behind an Application Load Balancer (`server`) and one-off background task definitions (`tasks`).
+Provisions an ECS cluster with Fargate (Container Insights disabled by default; override with `ecs.cluster`). Supports long-running services behind an Application Load Balancer (`server`) and event-driven background task definitions (`tasks`).
 
 #### `ecs.server`
 
-A single Fargate service with one or more containers behind an ALB.
+A single Fargate service with one or more containers behind an ALB. Each app is routed by CloudFront to the ALB with a `proxy-path` origin header matched by its own listener rule. See [`@fy-stack/app-construct`](../app-construct/README.md#ecsserverconstruct-ecsserver) for routing, static asset and base path details.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `apps` | `Record<string, ServerApp>` | Container apps to run in the service |
-| `loadBalancer` | `{ arn, priorityRange } \| ApplicationLoadBalancerProps` | Reuse an existing ALB by ARN or create a new one |
-| `definition` | `FargateTaskDefinitionProps` | CPU/memory for the task definition |
+| `loadBalancer` | `{ arn, priorityRange, priorityOverride?, internal?, vpcOriginArn? } \| (ApplicationLoadBalancerProps & { internal? })` | Reuse an existing ALB by ARN or create a new one (internet-facing by default; `internal: true` uses a CloudFront VPC origin) |
+| `healthCheck` | `Omit<HealthCheck, 'interval'> & { interval?: number }` | ALB target group health check options (`interval` in seconds, default: `30`) |
+| `definition` | `FargateTaskDefinitionProps` | CPU/memory and task definition options (defaults: `256` CPU, `512` MiB) |
 | `grants` | `AppGrant[]` | Permissions to grant the server's task role |
-| `assignPublicIp` | `boolean` | Assign a public IP to the Fargate service (default: `false`) |
+| `assignPublicIp` | `boolean` | Assign a public IP and use `PUBLIC` subnets (default: `false`, uses `PRIVATE_WITH_EGRESS`) |
 
-Each `ServerApp` entry:
+Each `ServerApp` entry supports local (`output`) or SSM (`reference`/`version`) sources:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `type` | `AppType.NEXT_APP_ROUTER \| AppType.IMAGE_APP` | Application type |
-| `output` | `string` | Path to the built application or Dockerfile directory |
+| `type` | `AppType.NEXT_APP_ROUTER \| AppType.IMAGE_APP \| AppType.REACT_ROUTER` | Application type |
+| `output` | `string` | Path to the built application or Dockerfile directory (or use `reference` & `version`) |
 | `port` | `number` | Container port to expose |
+| `healthPath` | `string` | Full health check path served by the container, including any base path, e.g. `/admin/health` (default: `healthCheck.path`, then `'/'`) |
+| `connectLoadBalancer` | `boolean` | Create the ALB target and listener rule even when the app is not attached to a CDN |
 | `env` | `Record<string, string>` | Static environment variables |
 | `attachment` | `AppAttachment` | Resources to attach to this specific container |
-| `container` | `ContainerDefinitionOptions` | Additional CDK container options |
+| `container` | `ContainerDefinitionOptions & { output?: string; image: AssetImageProps }` | Additional CDK container and Docker image asset options |
+| `buildParams` | `Record<string, unknown>` | Additional build-time parameters |
 
 #### `ecs.tasks`
 
-A map of Fargate task definitions for background processing (not behind a load balancer).
+A map of Fargate task definitions for background processing (invoked via SNS -> SQS -> EventBridge Pipes when wired in `event.handlers`).
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `type` | `AppType.IMAGE_APP` | Must be `IMAGE_APP` |
-| `output` | `string` | Path to the Dockerfile directory |
+| `output` | `string` | Path to the Dockerfile directory (or use `reference` & `version`) |
+| `definition` | `FargateTaskDefinitionProps` | Optional task definition overrides (defaults: `256` CPU, `512` MiB) |
 | `env` | `Record<string, string>` | Static environment variables |
 | `grants` | `AppGrant[]` | Permissions to grant the task role |
 | `attachment` | `AppAttachment` | Resources to attach to this task |
@@ -339,9 +377,12 @@ ecs: {
       cpu: 512,
       memoryLimitMiB: 1024,
     },
+    healthCheck: {
+      interval: 30,
+    },
     loadBalancer: {
-      // Create a new ALB:
-      internetFacing: true,
+      // Create a new ALB (internet-facing unless internal is set):
+      internal: true,
     },
     // Or reuse an existing ALB:
     // loadBalancer: {
@@ -354,6 +395,7 @@ ecs: {
         type: AppType.IMAGE_APP,
         output: 'apps/api',
         port: 3000,
+        healthPath: '/health',
         attachment: { storage: true, secret: true },
       },
     },
@@ -380,8 +422,8 @@ A map of named static site deployments. Each entry is uploaded to S3 and served 
 | Field | Type | Description |
 |-------|------|-------------|
 | `type` | `AppType.NEXT_PAGE_EXPORT \| AppType.STATIC_WEBSITE` | Static app type |
-| `output` | `string` | Path to the built static output directory |
-| `buildParams` | `Record<string, unknown>` | Additional build-time parameters |
+| `output` | `string` | Path to the built static output directory (or use `reference` & `version`) |
+| `buildParams` | `Record<string, unknown>` | Additional build parameters (e.g. `{ spa: true }` on `STATIC_WEBSITE` for SPA `/index.html` rewrites) |
 
 ```typescript
 static: {
@@ -392,6 +434,7 @@ static: {
   marketing: {
     type: AppType.STATIC_WEBSITE,
     output: 'dist/apps/marketing',
+    buildParams: { spa: true },
   },
 }
 ```
@@ -402,7 +445,7 @@ static: {
 
 **Type:** `EventConfig` — **Optional**
 
-Sets up SNS-based message routing between resources and supports scheduled (cron) invocations. Eligible targets are Lambda functions and ECS tasks.
+Sets up SNS-based message routing between resources and supports scheduled (cron/rate) invocations. Eligible targets are Lambda functions and ECS tasks.
 
 #### `event.handlers`
 
@@ -415,14 +458,14 @@ A list of message handler mappings — which resource should process which messa
 
 #### `event.schedule`
 
-A list of cron-based schedules that publish messages to subscribed resources:
+A list of schedules that publish `{ message, payload: {} }` to subscribed resources:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `messages` | `string[]` | Message types to publish on schedule |
 | `cron` | `CronOptions` | AWS Events cron expression |
 | `rate` | `Duration` | Fixed rate interval (alternative to `cron`) |
-| `expression` | `string` | Raw cron expression string |
+| `expression` | `string` | Raw schedule expression string |
 
 ```typescript
 event: {
@@ -447,34 +490,40 @@ event: {
 
 ### `cdn`
 
-**Type:** `CDNConfig` — **Optional**
+**Type:** `Omit<CDNConstructProps, 'resources'>` — **Optional**
 
-Provisions a CloudFront distribution that routes requests to your Lambda functions, ECS services, static apps, and storage bucket.
+Provisions a CloudFront distribution that routes requests to your Lambda functions, ECS services, static apps, and storage bucket. Must include a `'/*'` base route.
 
 #### `cdn.routes`
 
-A map of URL path patterns to resource references. Each key is a CloudFront path pattern (e.g. `/api/*`) and the value is a `ResourceRef` pointing to a named resource.
+A map of URL path patterns to resource references (`ResourceRef & RouteProps`).
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `$resource` | `string` | Key of the Lambda, ECS server app, static app, or `"storage"` |
-| `public` | `boolean` | Whether the route is publicly accessible (default: `true`) |
-| `keys` | `string[]` | CloudFront key pair IDs required to access signed routes |
+| `private` | `true` | Restrict access to signed URLs/cookies using the CloudFront `KeyGroup` created from `cdn.key` |
+
+#### `cdn.key`
+
+**Type:** `string` — **Optional**
+
+Path to a PEM-encoded public key file used to create a CloudFront `PublicKey` and `KeyGroup` for `private: true` routes.
 
 #### `cdn.domains`
 
-Optional custom domain configuration:
+Optional custom domain configurations (in addition to the top-level `domain` prop, if set):
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `domain` | `string` | The root domain name |
-| `records` | `string[]` | Subdomains to map (use `"*"` for the default/catch-all) |
+| `records` | `string[]` | Subdomains to map (use `"*"` for the root/apex domain) |
 
 ```typescript
 cdn: {
+  key: './keys/cloudfront-public-key.pem',
   routes: {
     '/api/*': { $resource: 'api' },
-    '/assets/*': { $resource: 'storage' },
+    '/assets/*': { $resource: 'storage', private: true },
     '/*': { $resource: 'web' },
   },
   domains: [
@@ -494,18 +543,16 @@ When both `storage` and `cdn` are configured, a CloudFront bucket policy is auto
 
 **Type:** `{ routes: Record<string, ResourceRef> }` — **Optional**
 
-Provisions an HTTP API Gateway and routes requests to Lambda functions or ECS services.
+Provisions an HTTP API Gateway and routes requests to `ApiResource` constructs. Must include a `'/*'` base route.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `routes` | `Record<string, ResourceRef>` | Map of route keys to resource references |
 
-The route key is passed directly to the underlying `ApiResource.api(path)` method of the referenced construct, so the exact path format depends on the application type.
-
 ```typescript
 api: {
   routes: {
-    api: { $resource: 'api' },
+    '/*': { $resource: 'api' },
   },
 }
 ```
@@ -518,10 +565,10 @@ api: {
 
 Additional key/value pairs to include in the Secrets Manager secret. The following keys are always included automatically:
 
-- `REGION` — AWS region
+- `region` / `REGION` — AWS region
 - `ENVIRONMENT` — the `environment` prop value
 
-All constructs (auth, database, storage, event, cdn, api) also contribute their own connection values to the same secret automatically.
+All configured constructs (`auth`, `database`, `storage`, `event`, `cdn`, `api`) also contribute their `attachable()` attributes (prefixed with `AUTH_`, `DATABASE_`, `STORAGE_`, `EVENT_`, `CDN_`, `API_`) to the same secret automatically.
 
 ```typescript
 secret: {
@@ -538,12 +585,13 @@ The `AppType` constant (from `@fy-stack/types`) defines all supported applicatio
 
 | Constant | Value | Runtimes | Description |
 |----------|-------|----------|-------------|
-| `AppType.NODE_APP` | `"nodeApp"` | Lambda, ECS | General-purpose Node.js application |
-| `AppType.NODE_API` | `"nestApi"` | Lambda, ECS | NestJS API application with API Gateway integration |
+| `AppType.NODE_APP` | `"nodeApp"` | Lambda | General-purpose Node.js Lambda application |
+| `AppType.NODE_API` | `"nestApi"` | Lambda | Node.js HTTP API (e.g. NestJS) running with AWS Lambda Web Adapter |
 | `AppType.IMAGE_APP` | `"imageApp"` | Lambda, ECS | Docker image-based application |
-| `AppType.NEXT_APP_ROUTER` | `"nextAppRouter"` | Lambda, ECS | Next.js with App Router (server-rendered) |
-| `AppType.NEXT_PAGE_EXPORT` | `"nextPageExport"` | Static | Next.js with static export (`next export`) |
-| `AppType.STATIC_WEBSITE` | `"staticWebsite"` | Static | Plain HTML/CSS/JS static site |
+| `AppType.NEXT_APP_ROUTER` | `"nextAppRouter"` | Lambda, ECS | Next.js with App Router (server-rendered + S3 static assets) |
+| `AppType.REACT_ROUTER` | `"reactRouter"` | ECS | React Router server-rendered application (+ S3 client assets) |
+| `AppType.NEXT_PAGE_EXPORT` | `"nextPageExport"` | Static | Next.js with static export |
+| `AppType.STATIC_WEBSITE` | `"staticWebsite"` | Static | Plain HTML/CSS/JS static site or SPA |
 
 ```typescript
 import { AppType } from '@fy-stack/types';
@@ -793,9 +841,7 @@ new FullStackConstruct(stack, 'MyApp', {
         cpu: 1024,
         memoryLimitMiB: 2048,
       },
-      loadBalancer: {
-        internetFacing: true,
-      },
+      loadBalancer: {},
       grants: [AppGrant.AUTH, AppGrant.STORAGE, AppGrant.SECRET],
       apps: {
         api: {

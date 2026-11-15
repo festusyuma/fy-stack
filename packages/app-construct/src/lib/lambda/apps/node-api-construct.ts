@@ -8,7 +8,7 @@ import * as cloudfrontOrigin from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaEventSource from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import { ITopicSubscription, SubscriptionProps } from 'aws-cdk-lib/aws-sns';
+import { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
@@ -22,6 +22,8 @@ import { lambdaGrant } from '../utils/lambda-grant';
 export class NodeApiConstruct extends Construct implements AppConstruct {
   public function: lambda.Function;
   public queue: sqs.Queue | undefined;
+
+  private url?: lambda.FunctionUrl;
 
   constructor(scope: Construct, id: string, props: AppProperties) {
     super(scope, id);
@@ -94,17 +96,13 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
     return lambdaGrant(this.function, grants);
   }
 
-  subscription(props: SubscriptionProps): ITopicSubscription {
+  subscription(): ITopicSubscription {
     throw new Error(`subscription is not supported for ${this}`);
   }
 
   cloudfront(path: string) {
-    const apiUrl = this.function.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.NONE,
-    });
-
     const apiBehavior = {
-      origin: new cloudfrontOrigin.FunctionUrlOrigin(apiUrl),
+      origin: new cloudfrontOrigin.FunctionUrlOrigin(this.functionUrl()),
       cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
       allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
       compress: true,
@@ -119,12 +117,20 @@ export class NodeApiConstruct extends Construct implements AppConstruct {
     return { [`${path}/*`]: apiBehavior };
   }
 
-  cloudfrontPolicy(distributionId: string) {
+  cloudfrontPolicy() {
     throw new Error(`cloudfrontPolicy not supported for ${this}`);
   }
 
   api(path: string) {
-    return lambdaApi(this.function, path);
+    return lambdaApi(this.function, this.functionUrl(), path);
+  }
+
+  private functionUrl() {
+    this.url ??= this.function.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+    });
+
+    return this.url;
   }
 
   static parse<T>(params: T) {

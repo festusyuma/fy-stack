@@ -4,9 +4,11 @@ import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
+import { deployThenPrune } from '../../shared/deploy-then-prune';
 import { paramsFromAttachable } from '../../shared/params-from-attachable';
 import { publicBucket } from '../../shared/public-bucket';
 import {
@@ -43,12 +45,37 @@ export class ReactRouterConstruct extends Construct implements AppConstruct {
     } else {
       const fileParams = filesFromSSM(this, props.reference, props.version);
       const appArtifact = s3.Bucket.fromBucketName(
-        scope,
+        this,
         'AppArtifactStorage',
         fileParams.artifact
       );
 
       this.files = { ...fileParams, artifactBucket: appArtifact };
+    }
+
+    if (this.files.publicFiles) {
+      const publicFiles = s3Deploy.Source.bucket(
+        this.files.artifactBucket,
+        this.files.publicFiles.key
+      );
+
+      const { deployment, prune } = deployThenPrune(
+        this,
+        `${props.appName}PublicDeployment`,
+        {
+          destinationBucket: this.static,
+          sources: [publicFiles],
+          retainOnDelete: false,
+          memoryLimit: 512,
+        }
+      );
+
+      props.taskDefinition.node.addDependency(deployment);
+      prune.node.addDependency(props.service);
+
+      if (this.files.publicFiles.deployment) {
+        deployment.node.addDependency(this.files.publicFiles.deployment);
+      }
     }
 
     this.container = taskDefinitionImage(
@@ -59,22 +86,15 @@ export class ReactRouterConstruct extends Construct implements AppConstruct {
   }
 
   cloudfront(path: string): Record<string, cloudfront.BehaviorOptions> {
-    const { origin, proxyPath } = this.props.serverOrigin(
-      this.props.port,
-      this.container.containerName,
-      path
-    );
+    const { origin } = this.props.serverOrigin();
 
     if (!origin) throw new Error('No server origin');
 
-    return cloudfrontBehaviours(
-      this,
-      this.static,
-      origin,
-      path,
-      this.files,
-      proxyPath
-    );
+    return cloudfrontBehaviours(this, this.static, origin, path);
+  }
+
+  containerName(): string {
+    return this.container.containerName;
   }
 
   cloudfrontPolicy(distributionId: string) {

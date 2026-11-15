@@ -1,9 +1,8 @@
 import type { Domain } from '@fy-stack/types';
 import type {
+  CfnManagedLoginBrandingProps,
   SignInAliases,
-  UserPoolClientProps,
-  CfnManagedLoginBrandingProps
-} from 'aws-cdk-lib/aws-cognito';
+  UserPoolClientProps} from 'aws-cdk-lib/aws-cognito';
 
 export interface AuthConstructProps {
   appName: string;

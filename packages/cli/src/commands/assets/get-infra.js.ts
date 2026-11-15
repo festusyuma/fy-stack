@@ -20,29 +20,34 @@ const env = {
 const environment = process.env.ENVIRONMENT
 if (!environment) throw new Error("ENVIRONMENT is required");
 
-const appName = ${params.app}
+const appName = ${JSON.stringify(params.app)};
 
 class AppStack extends cdk.Stack {
   constructor(scope, id, props) {
     super(scope, id, props);
-    
-    ${
-      params.domain
-        ? `const domainName = environment === 'production' ? ${params.domain} : \`\${environment}.${params.domain}\``
-        : ''
-    }
 
-    const app = new FullStackConstruct(this, "App", {
+    new FullStackConstruct(this, "App", {
       environment,
-      name: \${appName},
-      ownerArn: props.ownerArn,
-      storage: { retainOnDelete: false },
+      name: appName,
+      ownerArn: props.ownerArn,${
+        params.domain
+          ? `
+      domain: {
+        domain: ${JSON.stringify(params.domain)},
+        records: environment === "production" ? ["*", "www"] : [environment],
+      },`
+          : ''
+      }
+      storage: { retainOnDelete: environment === "production" },
       lambda: {
         demo: {
           type: AppType.NODE_APP,
-          output: './dist'
-        }
-      }
+          output: "./dist",
+          cmd: "index.handler",
+          buildParams: {},
+        },
+      },
+      outputs: true,
     });
   }
 }

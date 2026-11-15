@@ -37,7 +37,7 @@ export type FullStackConstructProps = {
     EcsConstructProps,
     'vpc' | 'environmentPath' | 'server' | 'tasks' | 'environment' | 'logGroup'
   > & {
-    server: Omit<NonNullable<EcsConstructProps['server']>, 'apps'> & {
+    server?: Omit<NonNullable<EcsConstructProps['server']>, 'apps'> & {
       grants?: AppGrant[];
       apps: Record<
         string,
@@ -46,7 +46,7 @@ export type FullStackConstructProps = {
         }
       >;
     };
-    tasks: Record<
+    tasks?: Record<
       string,
       NonNullable<EcsConstructProps['tasks']>[string] & {
         grants?: AppGrant[];

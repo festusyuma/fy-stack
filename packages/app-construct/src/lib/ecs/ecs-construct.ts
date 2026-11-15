@@ -14,7 +14,8 @@ export class EcsConstruct extends Construct {
 
     const appCluster = new ecs.Cluster(this, 'EcsCluster', {
       vpc: props.vpc,
-      containerInsightsV2: ecs.ContainerInsights.ENABLED,
+      containerInsightsV2: ecs.ContainerInsights.DISABLED,
+      ...props.cluster,
     });
 
     if (props.server) {

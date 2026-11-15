@@ -8,7 +8,7 @@ import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 
-import { proxyPathHeaderCode } from './proxy-path-header';
+import { stripBasePathAssociation } from './strip-base-path';
 
 export type AppFile = {
   artifactBucket: s3.IBucket;
@@ -72,39 +72,8 @@ export function cloudfrontBehaviours(
   staticBucket: s3.IBucket,
   serverOrigin: cloudfront.IOrigin,
   basePath: string,
-  files: AppFile,
-  proxyPath?: string,
   isLambda = false
 ) {
-  const strippedBasePath = basePath.replace(/^\/+|\/+$/g, '');
-  let publicDeployment: s3Deploy.BucketDeployment | undefined;
-
-  if (files.publicFiles) {
-    const publicFiles = s3Deploy.Source.bucket(
-      files.artifactBucket,
-      files.publicFiles.key
-    );
-
-    publicDeployment = new s3Deploy.BucketDeployment(
-      scope,
-      `${strippedBasePath}PublicDeployment`,
-      {
-        destinationBucket: staticBucket,
-        sources: [publicFiles],
-        destinationKeyPrefix: strippedBasePath
-          ? `${strippedBasePath}/`
-          : undefined,
-        retainOnDelete: false,
-        prune: false,
-        memoryLimit: 512,
-      }
-    );
-
-    if (files.publicFiles.deployment) {
-      publicDeployment.node.addDependency(files.publicFiles.deployment);
-    }
-  }
-
   const staticOrigin = new cloudfrontOrigin.S3StaticWebsiteOrigin(staticBucket);
 
   const staticBehavior: cloudfront.BehaviorOptions = {
@@ -114,6 +83,7 @@ export function cloudfrontBehaviours(
     cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
     compress: true,
     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+    functionAssociations: stripBasePathAssociation(scope, basePath),
   };
 
   const appBehaviour: cloudfront.BehaviorOptions = {
@@ -128,17 +98,6 @@ export function cloudfrontBehaviours(
     responseHeadersPolicy:
       cloudfront.ResponseHeadersPolicy
         .CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
-    functionAssociations: proxyPath
-      ? [
-          {
-            function: new cloudfront.Function(scope, 'ProxyPathHeader', {
-              runtime: cloudfront.FunctionRuntime.JS_2_0,
-              code: proxyPathHeaderCode(proxyPath),
-            }),
-            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
-          },
-        ]
-      : [],
   };
 
   return {

@@ -23,7 +23,7 @@ export class CDNConstruct extends Construct implements Attachable {
     super(scope, id);
 
     const routes: Record<string, { resource: CDNResource } & RouteProps> = {};
-    this.keyGroup = this.getKeyGroup('Base', props.key);
+    this.keyGroup = this.getKeyGroup(props.name || 'Base', props.key);
 
     Object.assign(
       routes,

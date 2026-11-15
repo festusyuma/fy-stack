@@ -37,9 +37,9 @@ jobs:
           aws-region: ${props.region}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: 24
 
       - name: Install dependencies
         run: npm ci

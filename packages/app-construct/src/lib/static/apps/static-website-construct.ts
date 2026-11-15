@@ -129,7 +129,7 @@ export class StaticWebsiteConstruct extends Construct implements AppConstruct {
     };
   }
 
-  cloudfrontPolicy(distributionId: string) {
+  cloudfrontPolicy() {
     throw new Error(`cloudfrontPolicy not supported for ${this}`);
   }
 
