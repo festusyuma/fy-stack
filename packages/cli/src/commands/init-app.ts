@@ -14,6 +14,7 @@ import {
   AttachRolePolicyCommand,
   CreateOpenIDConnectProviderCommand,
   CreateRoleCommand,
+  GetGroupPolicyCommand,
   GetOpenIDConnectProviderCommand,
   GetRoleCommand,
   GetUserPolicyCommand,
@@ -33,6 +34,7 @@ import {
 } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 
+import { version } from '../version';
 import { getInfra } from './assets/get-infra.js';
 import { getYAMLFile } from './assets/get-yaml-file';
 import { InitAppProps } from './types';
@@ -224,8 +226,8 @@ export async function initApp(props: InitAppProps) {
 
         for (const policyName of inlinePolices.PolicyNames ?? []) {
           const policyDocument = await iamClient.send(
-            new GetUserPolicyCommand({
-              UserName: username,
+            new GetGroupPolicyCommand({
+              GroupName: group.GroupName,
               PolicyName: policyName,
             })
           );
@@ -335,26 +337,25 @@ export async function initApp(props: InitAppProps) {
     fs.readFileSync(path.join(workingDir, 'package.json'), 'utf8')
   );
 
-  packageJsonFile['devDependencies'] = {
-    ...packageJsonFile['devDependencies'],
-    'aws-cdk': packageJsonFile.devDependencies?.['aws-cdk'] ?? '^2.1016.1',
-    'aws-cdk-lib':
-      packageJsonFile.devDependencies?.['aws-cdk-lib'] ?? '^2.229.1',
-    '@aws-sdk/client-sts':
-      packageJsonFile.devDependencies?.['@aws-sdk/client-sts'] ?? '^3.799.0',
-    constructs: packageJsonFile.devDependencies?.['constructs'] ?? '^10.4.3',
-    '@fy-stack/fullstack-construct':
-      packageJsonFile.devDependencies?.['@fy-stack/fullstack-construct'] ??
-      '^0.0.147',
-    '@fy-stack/types':
-      packageJsonFile.devDependencies?.['@fy-stack/types'] ?? '^0.0.147',
+  const devDependencies: Record<string, string> = {
+    'aws-cdk': '^2.1148.1',
+    'aws-cdk-lib': '2.265.0',
+    constructs: '^10.5.1',
+    'cdk-ecr-deployment': '^4.1.2',
+    '@aws-sdk/client-sts': '^3.731.1',
+    '@fy-stack/fullstack-construct': version,
+    '@fy-stack/types': version,
   };
 
-  const domain: string | undefined = props.domainName
-    ? `process.env.ENVIRONMENT === "production" ? "${props.domainName}" : \`\${process.env.ENVIRONMENT}.${props.domainName}\``
-    : undefined;
+  packageJsonFile['devDependencies'] = {
+    ...devDependencies,
+    ...packageJsonFile['devDependencies'],
+  };
 
-  const { infraFile, cdkJsonFile } = getInfra({ app: props.app, domain });
+  const { infraFile, cdkJsonFile } = getInfra({
+    app: props.app,
+    domain: props.domainName || undefined,
+  });
 
   fs.writeFileSync(packageJsonPath, JSON.stringify(packageJsonFile, null, 2));
 

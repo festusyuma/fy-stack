@@ -31,6 +31,10 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
     );
   }
 
+  containerName(): string {
+    return this.container.containerName;
+  }
+
   attach(attachable: Record<string, Attachable>): void {
     const params = Object.assign({}, ...paramsFromAttachable(attachable));
     for (const i in params) {
@@ -39,15 +43,9 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
   }
 
   cloudfront(path: string): Record<string, BehaviorOptions> {
-    const { origin, basePath } = this.props.serverOrigin(
-      this.props.port,
-      this.container.containerName,
-      path,
-      '/health'
-    );
+    const { origin } = this.props.serverOrigin();
 
     if (!origin) throw new Error('No server origin');
-    this.container.addEnvironment('BASE_PATH', basePath);
 
     const appBehaviour = {
       origin,

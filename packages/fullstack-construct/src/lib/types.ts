@@ -3,11 +3,13 @@ import type {
   LambdaConstructProps,
   StaticConstructProps,
 } from '@fy-stack/app-construct';
+import type { AuthConstructProps } from '@fy-stack/auth-construct';
 import type { CDNConstructProps } from '@fy-stack/cdn-construct';
 import type { DatabaseConstructProps } from '@fy-stack/database-construct';
 import type { EventConstructProps } from '@fy-stack/event-construct';
 import type { StorageConstructProps } from '@fy-stack/storage-construct';
-import { AppGrant, type ResourceRef } from '@fy-stack/types';
+import { AppGrant, type Domain,type ResourceRef } from '@fy-stack/types';
+import type { IRole, IUser } from 'aws-cdk-lib/aws-iam';
 
 /**
  * Attach resource
@@ -27,14 +29,15 @@ export type FullStackConstructProps = {
   name: string;
   environment: string;
   vpcId?: string;
-  auth?: { groups?: string[] };
+  domain?: Domain;
+  auth?: Omit<AuthConstructProps, 'environment' | 'appName' | 'domain'>;
   storage?: StorageConstructProps;
   database?: DatabaseConstructProps;
   ecs?: Omit<
     EcsConstructProps,
     'vpc' | 'environmentPath' | 'server' | 'tasks' | 'environment' | 'logGroup'
   > & {
-    server: Omit<NonNullable<EcsConstructProps['server']>, 'apps'> & {
+    server?: Omit<NonNullable<EcsConstructProps['server']>, 'apps'> & {
       grants?: AppGrant[];
       apps: Record<
         string,
@@ -43,7 +46,7 @@ export type FullStackConstructProps = {
         }
       >;
     };
-    tasks: Record<
+    tasks?: Record<
       string,
       NonNullable<EcsConstructProps['tasks']>[string] & {
         grants?: AppGrant[];
@@ -66,3 +69,7 @@ export type FullStackConstructProps = {
   outputs?: boolean;
   ownerArn?: string;
 };
+
+export type Owner =
+  | { type: 'user'; principal: IUser }
+  | { type: 'role'; principal: IRole };

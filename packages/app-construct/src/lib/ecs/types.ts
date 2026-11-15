@@ -1,16 +1,24 @@
 import type { ApiResource, Attach, CDNResource } from '@fy-stack/types';
 import { AppType } from '@fy-stack/types';
-import type { LoadBalancerV2Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
-import type { IVpc } from 'aws-cdk-lib/aws-ec2';
+import type {
+  LoadBalancerV2Origin,
+  VpcOrigin,
+} from 'aws-cdk-lib/aws-cloudfront-origins';
+import type { IVpc, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
 import type {
   AssetImageProps,
+  BaseService,
   Cluster,
+  ClusterProps,
   ContainerDefinitionOptions,
   FargateServiceProps,
   FargateTaskDefinitionProps,
   TaskDefinition,
 } from 'aws-cdk-lib/aws-ecs';
-import type { ApplicationLoadBalancerProps } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import type {
+  ApplicationLoadBalancerProps,
+  HealthCheck,
+} from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import type { LogGroup } from 'aws-cdk-lib/aws-logs';
 
 export type EcsConstructProps = {
@@ -18,10 +26,8 @@ export type EcsConstructProps = {
   environmentPath: string;
   environment: string;
   vpc: IVpc;
-  server?: Omit<
-    FargateServiceProps,
-    'cluster' | 'taskDefinition' | 'assignPublicIp' | 'vpcSubnets'
-  > & {
+  cluster?: Omit<ClusterProps, 'vpc'>;
+  server?: Omit<FargateServiceProps, 'cluster' | 'taskDefinition'> & {
     assignPublicIp?: boolean;
     definition?: FargateTaskDefinitionProps;
     apps: Record<string, ServerApp>;
@@ -30,7 +36,7 @@ export type EcsConstructProps = {
      * a load balancer is required when CDN is attached and will be created if no arn is present in config.
      * */
     loadBalancer?:
-      | {
+      | ({
           /**
            * Existing load balancer ARN.
            * used for sharing the same load balancer across various applications
@@ -41,9 +47,30 @@ export type EcsConstructProps = {
            *  it helps to be able to create unique priority for environment in this app
            * */
           priorityRange: [number, number];
-          priorityOverride?: Record<string, number>
-        }
-      | ApplicationLoadBalancerProps;
+          priorityOverride?: Record<string, number>;
+        } & (
+          | object
+          | {
+              /**
+               * If load balancer created or passed is internal
+               * */
+              internal: true;
+              /**
+               * Existing cloudfront VPC origin ARN.
+               * used for using the same VPC origin on shared internal load balancer
+               * */
+              vpcOriginArn?: string;
+            }
+        ))
+      | (Omit<ApplicationLoadBalancerProps, 'internetFacing' | 'vpc'> & {
+          internal?: true;
+        });
+    healthCheck?: Omit<HealthCheck, 'interval'> & {
+      /**
+       * Health check interval in seconds.
+       * */
+      interval?: number;
+    };
   };
   tasks?: Record<string, TaskApp>;
 };
@@ -52,6 +79,7 @@ export type AppSource =
   | {
       output: string;
       container?: Omit<ContainerDefinitionOptions, 'image' | 'logging'> & {
+        output?: string;
         image: AssetImageProps;
       };
     }
@@ -62,11 +90,16 @@ export type AppSource =
     };
 
 export type ServerApp = {
-  type: typeof AppType.NEXT_APP_ROUTER | typeof AppType.IMAGE_APP;
+  type:
+    | typeof AppType.NEXT_APP_ROUTER
+    | typeof AppType.IMAGE_APP
+    | typeof AppType.REACT_ROUTER;
   env?: Record<string, string>;
   /** Additional parameters that may be required, this varies based on type */
   buildParams?: Record<string, unknown>;
   port: number;
+  healthPath?: string;
+  connectLoadBalancer?: boolean;
 } & AppSource;
 
 export type TaskApp = {
@@ -81,14 +114,13 @@ export type AppProperties<BuildParams = Record<string, unknown>> = {
   environmentPath: string;
   logGroup: LogGroup;
   taskDefinition: TaskDefinition;
+  service: BaseService;
+  securityGroup?: SecurityGroup;
   env?: Record<string, string>;
   buildParams: BuildParams;
-  serverOrigin: (
-    port: number,
-    containerName: string,
-    appPath: string,
-    healthPath?: string
-  ) => { basePath: string; origin: LoadBalancerV2Origin };
+  serverOrigin: () => {
+    origin: LoadBalancerV2Origin | VpcOrigin;
+  };
   port: number;
 } & AppSource;
 
@@ -101,4 +133,6 @@ export type TaskConstructsProps = {
   definition?: FargateTaskDefinitionProps;
 } & AppSource;
 
-export interface AppConstruct extends Attach, CDNResource, ApiResource {}
+export interface AppConstruct extends Attach, CDNResource, ApiResource {
+  containerName(): string;
+}

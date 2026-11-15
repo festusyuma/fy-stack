@@ -13,11 +13,13 @@ import { Construct } from 'constructs';
 
 import { ImageAppConstruct } from './apps/image-app-construct';
 import { NextAppRouterConstruct } from './apps/next-app-router-construct';
+import { ReactRouterConstruct } from './apps/react-router-construct';
 import { AppConstruct, EcsConstructProps } from './types';
 
 const AppBuilds = {
   [AppType.NEXT_APP_ROUTER]: NextAppRouterConstruct,
   [AppType.IMAGE_APP]: ImageAppConstruct,
+  [AppType.REACT_ROUTER]: ReactRouterConstruct,
 };
 
 type EcsServerConstructProps = EcsConstructProps['server'] & {
@@ -36,6 +38,7 @@ export class EcsServerConstruct extends Construct implements Grant {
   public loadBalancer?: {
     alb: elbV2.IApplicationLoadBalancer;
     listener: elbV2.IApplicationListener;
+    vpcOrigin?: cdn.IVpcOrigin;
   };
 
   constructor(
@@ -85,95 +88,82 @@ export class EcsServerConstruct extends Construct implements Grant {
       ...serverProps,
     });
 
-    const serverOrigin = (
-      port: number,
-      containerName: string,
-      appPath: string,
-      healthPath?: string
-    ) =>
-      this.serverOrigin(this.service, port, containerName, appPath, healthPath);
-
-    serverOrigin.bind(this);
-
     Object.assign(
       this.apps,
       Object.fromEntries(
-        Object.entries(apps).map(([key, app]) => {
+        Object.entries(apps).map(([key, { healthPath, ...app }]) => {
           const AppTypeConstruct = AppBuilds[app.type];
+          const appFullPath = path.join(this.props.environmentPath, key);
 
-          return [
-            key,
-            new AppTypeConstruct(this, `${key}App`, {
-              appName: key,
-              logGroup: props.logGroup,
-              environmentPath: props.environmentPath,
-              buildParams: AppTypeConstruct.parse(app.buildParams ?? {}),
-              serverOrigin,
-              taskDefinition: this.definition,
-              ...app,
-            }),
-          ];
+          let target: elbV2.ApplicationTargetGroup | undefined;
+          let origin:
+            | cdnOrigin.LoadBalancerV2Origin
+            | cdnOrigin.VpcOrigin
+            | undefined;
+
+          const loadBalancerTarget = () => {
+            target ??= this.initLoadBalancerTarget(
+              appFullPath,
+              app.port,
+              appConstruct.containerName(),
+              healthPath
+            );
+
+            return target;
+          };
+
+          const serverOrigin = () => {
+            loadBalancerTarget();
+            origin ??= this.initCDNOrigin(appFullPath);
+            return { origin };
+          };
+
+          serverOrigin.bind(this);
+
+          const appConstruct = new AppTypeConstruct(this, `${key}App`, {
+            serverOrigin,
+            appName: key,
+            logGroup: props.logGroup,
+            environmentPath: props.environmentPath,
+            buildParams: AppTypeConstruct.parse(app.buildParams ?? {}),
+            taskDefinition: this.definition,
+            service: this.service,
+            securityGroup: appSecurityGroup,
+            ...app,
+          });
+
+          if (app.connectLoadBalancer) loadBalancerTarget();
+
+          return [key, appConstruct];
         })
       )
     );
   }
 
   grant(...grantables: Grantable[]): void {
-    for (const i in grantables) {
-      grantables[i].grantable(this.definition.taskRole);
+    for (const g of grantables) {
+      g.grantable(this.definition.taskRole);
     }
   }
 
-  private serverOrigin(
-    service: ecs.BaseService,
-    port: number,
-    containerName: string,
-    appPath: string,
-    healthPath?: string
-  ) {
-    if (!this.loadBalancer) this.loadBalancer = this.initLoadBalancer();
+  private initCDNOrigin(appFullPath: string) {
+    if (!this.loadBalancer) throw new Error('Load balancer not initialized');
+    const customHeaders = {
+      'proxy-path': appFullPath,
+      'x-original-proto': 'https',
+    };
 
-    const appFullPath = path.join(
-      this.props.environmentPath,
-      appPath || '/base'
-    );
-
-    const appTargetGroup = new elbV2.ApplicationTargetGroup(
-      this,
-      `${containerName}Target`,
-      {
-        vpc: this.props.vpc,
-        protocol: elbV2.ApplicationProtocol.HTTP,
-        targets: [
-          service.loadBalancerTarget({
-            containerPort: port,
-            containerName: containerName,
-          }),
-        ],
-        deregistrationDelay: Duration.seconds(10),
-        healthCheck: {
-          path: path.join(appFullPath, healthPath ?? ''),
-          interval: Duration.seconds(10),
-          healthyThresholdCount: 3
-        },
-      }
-    );
-
-    const origin = new cdnOrigin.LoadBalancerV2Origin(this.loadBalancer.alb, {
-      originPath: appPath ? this.props.environmentPath : appFullPath,
-      protocolPolicy: cdn.OriginProtocolPolicy.HTTP_ONLY,
-    });
-
-    this.loadBalancer.listener.addTargetGroups(`${containerName}Rule`, {
-      conditions: [elbV2.ListenerCondition.pathPatterns([`${appFullPath}/*`])],
-      priority: this.getAppPriority(appFullPath),
-      targetGroups: [appTargetGroup],
-    });
-
-    return { origin, basePath: appFullPath };
+    return this.loadBalancer.vpcOrigin
+      ? cdnOrigin.VpcOrigin.withVpcOrigin(this.loadBalancer.vpcOrigin, {
+          customHeaders,
+        })
+      : new cdnOrigin.LoadBalancerV2Origin(this.loadBalancer.alb, {
+          protocolPolicy: cdn.OriginProtocolPolicy.HTTP_ONLY,
+          customHeaders,
+        });
   }
 
-  initLoadBalancer() {
+  private initLoadBalancer() {
     if (this.props.loadBalancer && 'arn' in this.props.loadBalancer) {
       const alb = elbV2.ApplicationLoadBalancer.fromLookup(
         this,
@@ -193,30 +183,102 @@ export class EcsServerConstruct extends Construct implements Grant {
         );
       }
 
-      return { alb, listener };
+      let vpcOrigin;
+      if ('internal' in this.props.loadBalancer) {
+        vpcOrigin = this.props.loadBalancer.vpcOriginArn
+          ? cdn.VpcOrigin.fromVpcOriginAttributes(this, 'VPCOrigin', {
+              vpcOriginArn: this.props.loadBalancer.vpcOriginArn,
+              domainName: alb.loadBalancerDnsName,
+            })
+          : new cdn.VpcOrigin(this, 'VPCOrigin', {
+              endpoint: cdn.VpcOriginEndpoint.applicationLoadBalancer(alb),
+              protocolPolicy: cdn.OriginProtocolPolicy.HTTP_ONLY,
+            });
+      } else vpcOrigin = undefined;
+
+      return { alb, vpcOrigin, listener };
     }
 
+    const isInternal = this.props.loadBalancer?.internal;
+
     const alb = new elbV2.ApplicationLoadBalancer(this, 'LoadBalancer', {
-      vpc: this.props.vpc,
       vpcSubnets: {
-        subnets: this.props.vpc.publicSubnets,
+        onePerAz: true,
+        subnetType: isInternal
+          ? this.props.vpc.privateSubnets.length
+            ? ec2.SubnetType.PRIVATE_WITH_EGRESS
+            : ec2.SubnetType.PRIVATE_ISOLATED
+          : ec2.SubnetType.PUBLIC,
       },
-      internetFacing: true,
+      ...this.props.loadBalancer,
+      vpc: this.props.vpc,
+      internetFacing: !isInternal,
     });
 
+    const vpcOrigin = isInternal
+      ? new cdn.VpcOrigin(this, 'VPCOrigin', {
+          endpoint: cdn.VpcOriginEndpoint.applicationLoadBalancer(alb),
+          protocolPolicy: cdn.OriginProtocolPolicy.HTTP_ONLY,
+        })
+      : undefined;
+
     const listener = alb.addListener('Listener', { port: 80 });
+
     listener.addAction('DefaultAction', {
       action: elbV2.ListenerAction.fixedResponse(400),
     });
 
-    return { alb, listener };
+    return { alb, vpcOrigin, listener };
+  }
+
+  private initLoadBalancerTarget(
+    appFullPath: string,
+    port: number,
+    containerName: string,
+    healthPath?: string
+  ) {
+    if (!this.loadBalancer) this.loadBalancer = this.initLoadBalancer();
+
+    const { interval, ...healthCheck } = this.props.healthCheck ?? {};
+
+    const appTargetGroup = new elbV2.ApplicationTargetGroup(
+      this,
+      `${containerName}Target`,
+      {
+        vpc: this.props.vpc,
+        protocol: elbV2.ApplicationProtocol.HTTP,
+        targets: [
+          this.service.loadBalancerTarget({
+            containerPort: port,
+            containerName,
+          }),
+        ],
+        deregistrationDelay: Duration.seconds(10),
+        healthCheck: {
+          interval: Duration.seconds(interval ?? 30),
+          healthyThresholdCount: 3,
+          ...healthCheck,
+          path: path.join(healthPath ?? healthCheck.path ?? '/'),
+        },
+      }
+    );
+
+    this.loadBalancer.listener.addTargetGroups(`${containerName}Rule`, {
+      conditions: [
+        elbV2.ListenerCondition.httpHeader('proxy-path', [appFullPath]),
+      ],
+      priority: this.getAppPriority(appFullPath),
+      targetGroups: [appTargetGroup],
+    });
+
+    return appTargetGroup;
   }
 
   getAppPriority(appPath: string): number {
     const configPath = './fy-stack.context.json';
 
     let config: StackContext = {};
-    let priorityRage: [number, number] = [0, 1000];
+    let priorityRage: [number, number] = [1000, 1999];
 
     if (this.props.loadBalancer && 'priorityRange' in this.props.loadBalancer) {
       priorityRage = this.props.loadBalancer.priorityRange;

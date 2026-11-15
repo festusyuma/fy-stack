@@ -85,11 +85,11 @@ export class NodeAppConstruct extends Construct implements AppConstruct {
     return new snsSubscriptions.LambdaSubscription(this.function, props);
   }
 
-  cloudfront(path: string): Record<string, BehaviorOptions> {
+  cloudfront(): Record<string, BehaviorOptions> {
     throw new Error(`cloudfront not supported for ${this}`);
   }
 
-  cloudfrontPolicy(distributionId: string) {
+  cloudfrontPolicy() {
     throw new Error(`cloudfrontPolicy not supported for ${this}`);
   }
 

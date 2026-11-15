@@ -9,7 +9,9 @@ import { Construct } from 'constructs';
 
 import {
   AppFile,
+  appFilesDeployment,
   cloudfrontBehaviours,
+  createImageCachePolicy,
   filesFromSSM,
   staticDeployment,
 } from '../../shared/next-app-router';
@@ -26,6 +28,7 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
 
   private readonly static: s3.IBucket;
   private readonly files: AppFile;
+  private imagePolicy?: cloudfront.ICachePolicy;
 
   constructor(scope: Construct, id: string, private props: NextAppRouterProps) {
     super(scope, id);
@@ -42,13 +45,22 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     } else {
       const fileParams = filesFromSSM(this, props.reference, props.version);
       const appArtifact = s3.Bucket.fromBucketName(
-        scope,
+        this,
         'AppArtifactStorage',
         fileParams.artifact
       );
 
       this.files = { ...fileParams, artifactBucket: appArtifact };
     }
+
+    const { deployments, prunes } = appFilesDeployment(
+      this,
+      this.static,
+      this.files
+    );
+
+    props.taskDefinition.node.addDependency(...deployments);
+    for (const prune of prunes) prune.node.addDependency(props.service);
 
     this.container = taskDefinitionImage(
       this,
@@ -57,18 +69,27 @@ export class NextAppRouterConstruct extends Construct implements AppConstruct {
     );
   }
 
+  containerName(): string {
+    return this.container.containerName;
+  }
+
   cloudfront(path: string): Record<string, cloudfront.BehaviorOptions> {
-    const { origin, basePath } = this.props.serverOrigin(
-      this.props.port,
-      this.container.containerName,
-      path,
-      '/'
-    );
+    const { origin } = this.props.serverOrigin();
 
     if (!origin) throw new Error('No server origin');
-    this.container.addEnvironment('BASE_PATH', basePath);
 
-    return cloudfrontBehaviours(this, this.static, origin, path, this.files);
+    return cloudfrontBehaviours(
+      this,
+      this.static,
+      origin,
+      this.imageCachePolicy(),
+      path
+    );
+  }
+
+  private imageCachePolicy() {
+    this.imagePolicy ??= createImageCachePolicy(this);
+    return this.imagePolicy;
   }
 
   cloudfrontPolicy(distributionId: string) {

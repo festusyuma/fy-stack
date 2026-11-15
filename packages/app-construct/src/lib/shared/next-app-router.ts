@@ -8,6 +8,9 @@ import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 
+import { deployThenPrune } from './deploy-then-prune';
+import { stripBasePathAssociation } from './strip-base-path';
+
 export type AppFile = {
   artifactBucket: s3.IBucket;
   staticFiles?: { deployment?: s3Deploy.BucketDeployment; key: string };
@@ -105,15 +108,13 @@ export function staticDeployment(
   return { files };
 }
 
-export function cloudfrontBehaviours(
+export function appFilesDeployment(
   scope: Construct,
   staticBucket: s3.IBucket,
-  serverOrigin: cloudfront.IOrigin,
-  basePath: string,
-  files: AppFile,
-  isLambda = false
+  files: AppFile
 ) {
-  const strippedBasePath = basePath.replace(/^\/+|\/+$/g, '');
+  const deployments: s3Deploy.BucketDeployment[] = [];
+  const prunes: s3Deploy.BucketDeployment[] = [];
   let publicDeployment: s3Deploy.BucketDeployment | undefined;
 
   if (files.publicFiles) {
@@ -122,23 +123,22 @@ export function cloudfrontBehaviours(
       files.publicFiles.key
     );
 
-    publicDeployment = new s3Deploy.BucketDeployment(
-      scope,
-      `${strippedBasePath}PublicDeployment`,
-      {
-        destinationBucket: staticBucket,
-        sources: [publicFiles],
-        destinationKeyPrefix: strippedBasePath
-          ? `${strippedBasePath}/`
-          : undefined,
-        retainOnDelete: false,
-        memoryLimit: 512,
-      }
-    );
+    const publicDeploy = deployThenPrune(scope, 'PublicDeployment', {
+      destinationBucket: staticBucket,
+      sources: [publicFiles],
+      exclude: ['_next/*'],
+      retainOnDelete: false,
+      memoryLimit: 512,
+    });
+
+    publicDeployment = publicDeploy.deployment;
+    prunes.push(publicDeploy.prune);
 
     if (files.publicFiles.deployment) {
       publicDeployment.node.addDependency(files.publicFiles.deployment);
     }
+
+    deployments.push(publicDeployment);
   }
 
   if (files.staticFiles) {
@@ -147,27 +147,54 @@ export function cloudfrontBehaviours(
       files.staticFiles.key
     );
 
-    const deployment = new s3Deploy.BucketDeployment(
+    const { deployment: staticDeployment, prune } = deployThenPrune(
       scope,
-      `${strippedBasePath}StaticDeployment`,
+      'StaticDeployment',
       {
         destinationBucket: staticBucket,
         sources: [staticFiles],
-        destinationKeyPrefix: strippedBasePath
-          ? `${strippedBasePath}/_next/static/`
-          : '_next/static/',
+        destinationKeyPrefix: '_next/static/',
         retainOnDelete: false,
         memoryLimit: 512,
       }
     );
 
-    if (publicDeployment) deployment.node.addDependency(publicDeployment);
+    prunes.push(prune);
+
+    if (publicDeployment) staticDeployment.node.addDependency(publicDeployment);
 
     if (files.staticFiles.deployment) {
-      deployment.node.addDependency(files.staticFiles.deployment);
+      staticDeployment.node.addDependency(files.staticFiles.deployment);
     }
+
+    deployments.push(staticDeployment);
   }
 
+  return { deployments, prunes };
+}
+
+export function createImageCachePolicy(scope: Construct) {
+  const imageCachePolicyID = ssm.StringParameter.fromStringParameterName(
+    scope,
+    'NextAppRouterImagePolicyArn',
+    '/fy-stack/ImagePolicyID'
+  );
+
+  return cloudfront.CachePolicy.fromCachePolicyId(
+    scope,
+    'ImagePolicy',
+    imageCachePolicyID.stringValue
+  );
+}
+
+export function cloudfrontBehaviours(
+  scope: Construct,
+  staticBucket: s3.IBucket,
+  serverOrigin: cloudfront.IOrigin,
+  imageCachePolicy: cloudfront.ICachePolicy,
+  basePath: string,
+  isLambda = false
+) {
   const staticOrigin = new cloudfrontOrigin.S3StaticWebsiteOrigin(staticBucket);
 
   const staticBehavior: cloudfront.BehaviorOptions = {
@@ -177,19 +204,8 @@ export function cloudfrontBehaviours(
     cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
     compress: true,
     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+    functionAssociations: stripBasePathAssociation(scope, basePath),
   };
-
-  const imageCachePolicyID = ssm.StringParameter.fromStringParameterName(
-    scope,
-    'NextAppRouterImagePolicyArn',
-    '/fy-stack/ImagePolicyID'
-  );
-
-  const imageCachePolicy = cloudfront.CachePolicy.fromCachePolicyId(
-    scope,
-    'ImagePolicy',
-    imageCachePolicyID.stringValue
-  );
 
   const appBehaviour: cloudfront.BehaviorOptions = {
     origin: serverOrigin,
@@ -213,5 +229,6 @@ export function cloudfrontBehaviours(
     [`${basePath}/_next/*`]: staticBehavior,
     [`${basePath}/*.*`]: staticBehavior,
     [`${basePath}/*`]: appBehaviour,
+    ...(basePath ? { [basePath]: appBehaviour } : {}),
   };
 }

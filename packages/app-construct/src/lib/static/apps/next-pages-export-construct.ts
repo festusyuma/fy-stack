@@ -99,7 +99,7 @@ export class NextPagesExportConstruct
     };
   }
 
-  cloudfrontPolicy(distributionId: string) {
+  cloudfrontPolicy() {
     throw new Error(`cloudfrontPolicy not supported for ${this}`);
   }
 

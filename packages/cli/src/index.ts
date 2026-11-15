@@ -4,10 +4,11 @@ import { confirm, input } from '@inquirer/prompts';
 import { program } from "commander"
 
 import { initApp } from './commands/init-app';
+import { version } from './version';
 
 program
   .name('fy-stack')
-  .version("0.0.131")
+  .version(version)
   .description('Fy-Stack CLI');
 
 program

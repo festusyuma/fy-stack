@@ -8,7 +8,11 @@ module.exports = [
       '@nx/dependency-checks': [
         'error',
         {
-          ignoredFiles: ['{projectRoot}/eslint.config.{js,cjs,mjs}'],
+          ignoredFiles: [
+            '{projectRoot}/eslint.config.{js,cjs,mjs}',
+            '{projectRoot}/vitest.config.{js,mjs,ts,mts}',
+            '{projectRoot}/src/**/*.spec.ts',
+          ],
         },
       ],
     },

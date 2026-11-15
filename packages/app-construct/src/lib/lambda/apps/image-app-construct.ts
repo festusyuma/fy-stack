@@ -16,6 +16,7 @@ import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import {
   Code,
   Function,
+  FunctionUrl,
   FunctionUrlAuthType,
   Handler,
   Runtime,
@@ -44,6 +45,8 @@ const BuildParamsSchema = z.looseObject({
 export class ImageAppConstruct extends Construct implements AppConstruct {
   public function: Function;
   public queue: Queue | undefined;
+
+  private url?: FunctionUrl;
 
   constructor(
     scope: Construct,
@@ -126,12 +129,8 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
   cloudfront(path: string): Record<string, BehaviorOptions> {
     this.function.addEnvironment('BASE_PATH', path);
 
-    const apiUrl = this.function.addFunctionUrl({
-      authType: FunctionUrlAuthType.NONE,
-    });
-
     const apiBehavior = {
-      origin: new FunctionUrlOrigin(apiUrl),
+      origin: new FunctionUrlOrigin(this.functionUrl()),
       cachePolicy: CachePolicy.CACHING_DISABLED,
       allowedMethods: AllowedMethods.ALLOW_ALL,
       compress: true,
@@ -149,7 +148,15 @@ export class ImageAppConstruct extends Construct implements AppConstruct {
   }
 
   api(path: string): Record<string, HttpRouteIntegration> {
-    return lambdaApi(this.function, path);
+    return lambdaApi(this.function, this.functionUrl(), path);
+  }
+
+  private functionUrl() {
+    this.url ??= this.function.addFunctionUrl({
+      authType: FunctionUrlAuthType.NONE,
+    });
+
+    return this.url;
   }
 
   static parse(params: unknown) {

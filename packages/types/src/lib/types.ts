@@ -1,5 +1,5 @@
 import type { HttpRouteIntegration } from 'aws-cdk-lib/aws-apigatewayv2';
-import type { BehaviorOptions } from 'aws-cdk-lib/aws-cloudfront';
+import type { BehaviorOptions, KeyGroup } from 'aws-cdk-lib/aws-cloudfront';
 import type { IGrantable } from 'aws-cdk-lib/aws-iam';
 import type { ITopicSubscription } from 'aws-cdk-lib/aws-sns';
 import type { SubscriptionProps } from 'aws-cdk-lib/aws-sns-subscriptions';
@@ -51,7 +51,7 @@ export interface CDNResource {
   /**
    * Generate map of paths to Cloudfront BehaviorOptions.
    * */
-  cloudfront(path: string): Record<string, BehaviorOptions>;
+  cloudfront(path: string, keys?: KeyGroup): Record<string, BehaviorOptions>;
   /**
    * Generate policy statement as json.
    * */
@@ -90,6 +90,18 @@ export type ResourceRef<T extends string = string> = {
 
 export type StackContext = {
   loadBalancer?: {
-    priorities?: Record<string, number>
-  }
-}
+    priorities?: Record<string, number>;
+  };
+};
+
+export type Domain = {
+  /**
+   * Domain name
+   * */
+  domain: string;
+  /**
+   * Domain name records to map to distribution,
+   * add "*" for default
+   * */
+  records: string[];
+};
